@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Calendar as CalendarIcon, CalendarOff, ChevronLeft, ChevronRight, Eye, EyeOff, RefreshCw, Settings } from 'lucide-vue-next'
+import GoogleCalendarEventModal from '@/components/GoogleCalendarEventModal.vue'
+import GoogleCalendarSettingsModal from '@/components/GoogleCalendarSettingsModal.vue'
 import M365EventModal from '@/components/M365EventModal.vue'
 import M365SettingsModal from '@/components/M365SettingsModal.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
 import { useI18n } from '@/i18n'
 import { isOverdue, toISODate } from '@/lib/dates'
+import type { GoogleCalendarEvent } from '@/services/googleCalendar'
 import type { M365Event } from '@/services/m365'
+import { useGoogleCalendarStore } from '@/stores/googleCalendar'
 import { useM365CalendarStore } from '@/stores/m365Calendar'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Task } from '@/types'
@@ -14,6 +18,7 @@ import type { Task } from '@/types'
 const { t, tArray, locale } = useI18n()
 const workspace = useWorkspaceStore()
 const m365 = useM365CalendarStore()
+const gcal = useGoogleCalendarStore()
 
 const currentYear = ref(new Date().getFullYear())
 const currentMonth = ref(new Date().getMonth())
@@ -21,7 +26,9 @@ const transitionDir = ref<'left' | 'right'>('right')
 const gridKey = ref(0)
 
 const settingsOpen = ref(false)
+const gcalSettingsOpen = ref(false)
 const selectedM365Event = ref<M365Event | null>(null)
+const selectedGCalEvent = ref<GoogleCalendarEvent | null>(null)
 
 const WEEKDAYS = computed(() => tArray('calendar.weekdays'))
 
@@ -45,6 +52,7 @@ interface CalendarDay {
   isToday: boolean
   tasks: Task[]
   m365Events: M365Event[]
+  gcalEvents: GoogleCalendarEvent[]
 }
 
 const calendarDays = computed<CalendarDay[]>(() => {
@@ -80,6 +88,7 @@ const calendarDays = computed<CalendarDay[]>(() => {
       isToday: iso === today,
       tasks: tasksByDate.get(iso) ?? [],
       m365Events: m365.eventsByDate.get(iso) ?? [],
+      gcalEvents: gcal.eventsByDate.get(iso) ?? [],
     })
   }
   return days
@@ -127,6 +136,10 @@ function openM365(event: M365Event) {
   selectedM365Event.value = event
 }
 
+function openGCal(event: GoogleCalendarEvent) {
+  selectedGCalEvent.value = event
+}
+
 function getInitials(name?: string) {
   if (!name) return '?'
   return name
@@ -149,6 +162,54 @@ function getInitials(name?: string) {
       </div>
 
       <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Google Calendar Control Bar -->
+        <div class="flex items-center gap-1 rounded-xl border border-line bg-surface p-1 shadow-xs">
+          <button
+            type="button"
+            class="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition cursor-pointer"
+            :class="gcal.isConfigured ? 'bg-[#4285F4]/10 text-[#4285F4] hover:bg-[#4285F4]/20' : 'text-muted hover:text-ink hover:bg-canvas'"
+            :title="t('gcal.modalTitle')"
+            @click="gcalSettingsOpen = true"
+          >
+            <CalendarIcon class="size-3.5" />
+            <span>{{ t('gcal.button') }}</span>
+            <span v-if="gcal.isConfigured" class="ml-0.5 rounded-full bg-[#4285F4] px-1.5 py-0.2 text-[9px] font-bold text-white">
+              {{ gcal.events.length }}
+            </span>
+          </button>
+
+          <button
+            v-if="gcal.isConfigured"
+            type="button"
+            class="rounded-lg p-1 text-muted hover:bg-canvas hover:text-ink transition cursor-pointer"
+            :title="gcal.enabled ? t('gcal.toggle') : t('gcal.toggle')"
+            @click="gcal.toggleEnabled"
+          >
+            <Eye v-if="gcal.enabled" class="size-3.5 text-[#4285F4]" />
+            <EyeOff v-else class="size-3.5" />
+          </button>
+
+          <button
+            v-if="gcal.isConfigured"
+            type="button"
+            class="rounded-lg p-1 text-muted hover:bg-canvas hover:text-ink transition cursor-pointer"
+            :disabled="gcal.loading"
+            :title="t('gcal.syncNow')"
+            @click="gcal.sync"
+          >
+            <RefreshCw class="size-3.5" :class="gcal.loading && 'animate-spin text-[#4285F4]'" />
+          </button>
+
+          <button
+            type="button"
+            class="rounded-lg p-1 text-muted hover:bg-canvas hover:text-ink transition cursor-pointer"
+            :title="t('gcal.modalTitle')"
+            @click="gcalSettingsOpen = true"
+          >
+            <Settings class="size-3.5" />
+          </button>
+        </div>
+
         <!-- Microsoft 365 Control Bar -->
         <div class="flex items-center gap-1 rounded-xl border border-line bg-surface p-1 shadow-xs">
           <button
@@ -169,7 +230,7 @@ function getInitials(name?: string) {
             v-if="m365.isConfigured"
             type="button"
             class="rounded-lg p-1 text-muted hover:bg-canvas hover:text-ink transition cursor-pointer"
-            :title="m365.enabled ? 'Ocultar eventos M365' : 'Mostrar eventos M365'"
+            :title="m365.enabled ? t('m365.toggle') : t('m365.toggle')"
             @click="m365.toggleEnabled"
           >
             <Eye v-if="m365.enabled" class="size-3.5 text-[#0078D4]" />
@@ -276,15 +337,32 @@ function getInitials(name?: string) {
                 {{ cell.day }}
               </span>
               <span
-                v-if="(cell.tasks.length + cell.m365Events.length) > 0"
+                v-if="(cell.tasks.length + cell.m365Events.length + cell.gcalEvents.length) > 0"
                 class="text-[10px] font-medium text-muted"
               >
-                {{ cell.tasks.length + cell.m365Events.length }}
+                {{ cell.tasks.length + cell.m365Events.length + cell.gcalEvents.length }}
               </span>
             </div>
 
-            <!-- Items: Native tasks + Microsoft 365 Events -->
+            <!-- Items: Google Calendar Events + Microsoft 365 Events + Native tasks -->
             <div class="flex-1 space-y-0.5 overflow-y-auto scrollbar-thin">
+              <!-- Google Calendar Events -->
+              <button
+                v-for="gEvent in cell.gcalEvents"
+                :key="gEvent.id"
+                class="group/gcal flex w-full cursor-pointer items-center gap-1 rounded-md bg-[#4285F4]/10 hover:bg-[#4285F4]/20 border border-[#4285F4]/25 px-1.5 py-[3px] text-left transition"
+                :title="`Google Calendar: ${gEvent.title}${gEvent.startTime ? ` (${gEvent.startTime})` : ''}`"
+                @click="openGCal(gEvent)"
+              >
+                <span class="size-1.5 shrink-0 rounded-full bg-[#4285F4]" />
+                <span class="min-w-0 flex-1 truncate text-[11px] font-medium leading-tight text-[#4285F4]">
+                  {{ gEvent.title }}
+                </span>
+                <span v-if="gEvent.startTime" class="text-[9px] font-semibold text-[#4285F4]/70 shrink-0">
+                  {{ gEvent.startTime }}
+                </span>
+              </button>
+
               <!-- Microsoft 365 Events -->
               <button
                 v-for="mEvent in cell.m365Events"
@@ -327,10 +405,10 @@ function getInitials(name?: string) {
               </button>
 
               <p
-                v-if="(cell.tasks.length + cell.m365Events.length) > 4"
+                v-if="(cell.tasks.length + cell.m365Events.length + cell.gcalEvents.length) > 4"
                 class="px-1.5 text-[10px] font-medium text-muted"
               >
-                +{{ (cell.tasks.length + cell.m365Events.length) - 4 }} {{ t('calendar.more') }}
+                +{{ (cell.tasks.length + cell.m365Events.length + cell.gcalEvents.length) - 4 }} {{ t('calendar.more') }}
               </p>
             </div>
           </div>
@@ -339,6 +417,9 @@ function getInitials(name?: string) {
     </div>
 
     <!-- Modals -->
+    <GoogleCalendarSettingsModal v-model:open="gcalSettingsOpen" />
+    <GoogleCalendarEventModal :event="selectedGCalEvent" @close="selectedGCalEvent = null" />
+
     <M365SettingsModal v-model:open="settingsOpen" />
     <M365EventModal :event="selectedM365Event" @close="selectedM365Event = null" />
   </div>
