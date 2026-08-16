@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Download, FileText, Grid2x2, Paperclip, Trash2, Upload, X } from 'lucide-vue-next'
+import CustomSelect from '@/components/CustomSelect.vue'
 import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
 import { useI18n } from '@/i18n'
 import { formatDateTime } from '@/lib/dates'
@@ -20,6 +21,16 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const task = computed(() => workspace.activeTask)
 const taskQuadrant = computed(() => (task.value ? getQuadrantFromTask(task.value) : null))
+
+const projectOptions = computed(() =>
+  workspace.projects.map((p) => ({ label: p.name, value: p.id }))
+)
+
+const assigneeOptions = computed(() => [
+  { label: t('common.unassigned'), value: '' },
+  ...workspace.users.map((u) => ({ label: u.fullName, value: u.id })),
+])
+
 
 watch(
   () => task.value,
@@ -210,15 +221,19 @@ function close() {
         <div class="grid grid-cols-2 gap-3 border-b border-line px-5 py-4">
           <label class="field-label">
             {{ t('drawer.status') }}
-            <select :value="task.status" class="field" @change="persist({ status: ($event.target as HTMLSelectElement).value as typeof task.status })">
-              <option v-for="status in STATUSES" :key="status.id" :value="status.id">{{ status.label }}</option>
-            </select>
+            <CustomSelect
+              :modelValue="task.status"
+              :options="STATUSES"
+              @update:modelValue="persist({ status: $event })"
+            />
           </label>
           <label class="field-label">
             {{ t('drawer.priority') }}
-            <select :value="task.priority" class="field" @change="updatePriority(($event.target as HTMLSelectElement).value as TaskPriority)">
-              <option v-for="priority in PRIORITIES" :key="priority.id" :value="priority.id">{{ priority.label }}</option>
-            </select>
+            <CustomSelect
+              :modelValue="task.priority"
+              :options="PRIORITIES"
+              @update:modelValue="updatePriority($event as TaskPriority)"
+            />
           </label>
           <label class="field-label">
             {{ t('drawer.startDate') }}
@@ -240,20 +255,19 @@ function close() {
           </label>
           <label class="field-label">
             {{ t('drawer.project') }}
-            <select :value="task.projectId" class="field" @change="persist({ projectId: ($event.target as HTMLSelectElement).value })">
-              <option v-for="project in workspace.projects" :key="project.id" :value="project.id">
-                {{ project.name }}
-              </option>
-            </select>
+            <CustomSelect
+              :modelValue="task.projectId"
+              :options="projectOptions"
+              @update:modelValue="persist({ projectId: $event })"
+            />
           </label>
           <label class="field-label">
             {{ t('drawer.assignee') }}
-            <select :value="task.assigneeId ?? ''" class="field" @change="persist({ assigneeId: ($event.target as HTMLSelectElement).value || null })">
-              <option value="">{{ t('common.unassigned') }}</option>
-              <option v-for="user in workspace.users" :key="user.id" :value="user.id">
-                {{ user.fullName }}
-              </option>
-            </select>
+            <CustomSelect
+              :modelValue="task.assigneeId ?? ''"
+              :options="assigneeOptions"
+              @update:modelValue="persist({ assigneeId: $event || null })"
+            />
           </label>
         </div>
 

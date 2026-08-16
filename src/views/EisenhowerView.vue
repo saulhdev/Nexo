@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Pencil, Plus, Search } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
+import CustomSelect from '@/components/CustomSelect.vue'
 import PriorityBadge from '@/components/PriorityBadge.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
-import { EISENHOWER_QUADRANTS, type EisenhowerQuadrant, getQuadrantFromTask } from '@/constants'
+import { EISENHOWER_QUADRANTS, type EisenhowerQuadrant, getQuadrantFromTask, STATUSES } from '@/constants'
 import { useI18n } from '@/i18n'
 import { formatDateRange, isOverdue } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -15,6 +16,16 @@ const { t } = useI18n()
 const workspace = useWorkspaceStore()
 const composerQuadrant = ref<EisenhowerQuadrant | null>(null)
 const composerRef = ref<InstanceType<typeof TaskComposer> | null>(null)
+
+const projectFilterOptions = computed(() => [
+  { label: t('list.allProjects'), value: 'all' },
+  ...workspace.projects.map((p) => ({ label: p.name, value: p.id })),
+])
+
+const statusFilterOptions = computed(() => [
+  { label: t('list.allStatuses'), value: 'all' },
+  ...STATUSES,
+])
 
 function quadrantTasks(quadrant: EisenhowerQuadrant): Task[] {
   return workspace.filteredTasks.filter((task) => {
@@ -85,26 +96,21 @@ function getInitials(name?: string) {
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
-        <select
-          :value="workspace.filters.projectId"
-          class="rounded-xl border border-line bg-canvas px-3 py-1.5 text-xs font-medium text-ink outline-none"
-          @change="workspace.setFilter('projectId', ($event.target as HTMLSelectElement).value)"
-        >
-          <option value="all">{{ t('list.allProjects') }}</option>
-          <option v-for="p in workspace.projects" :key="p.id" :value="p.id">{{ p.name }}</option>
-        </select>
+        <div class="w-44">
+          <CustomSelect
+            :modelValue="workspace.filters.projectId"
+            :options="projectFilterOptions"
+            @update:modelValue="workspace.setFilter('projectId', $event)"
+          />
+        </div>
 
-        <select
-          :value="workspace.filters.status"
-          class="rounded-xl border border-line bg-canvas px-3 py-1.5 text-xs font-medium text-ink outline-none"
-          @change="workspace.setFilter('status', ($event.target as HTMLSelectElement).value as TaskStatus | 'all')"
-        >
-          <option value="all">{{ t('list.allStatuses') }}</option>
-          <option value="todo">{{ t('status.todo') }}</option>
-          <option value="in_progress">{{ t('status.in_progress') }}</option>
-          <option value="in_review">{{ t('status.in_review') }}</option>
-          <option value="done">{{ t('status.done') }}</option>
-        </select>
+        <div class="w-40">
+          <CustomSelect
+            :modelValue="workspace.filters.status"
+            :options="statusFilterOptions"
+            @update:modelValue="workspace.setFilter('status', $event as TaskStatus | 'all')"
+          />
+        </div>
       </div>
     </div>
 

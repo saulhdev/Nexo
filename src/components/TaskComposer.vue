@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { Calendar, ChevronDown, FileText, Flag, Folder, Grid2x2, ListTodo, Paperclip, UserCheck, X } from 'lucide-vue-next'
+import { Calendar, FileText, Grid2x2, Paperclip, X } from 'lucide-vue-next'
+import CustomSelect from '@/components/CustomSelect.vue'
 import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
 import { useI18n } from '@/i18n'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Task, TaskPriority, TaskStatus } from '@/types'
+
 
 const { t } = useI18n()
 
@@ -54,6 +56,16 @@ const currentQuadrant = computed(() =>
 )
 
 const canSubmit = computed(() => form.title.trim().length > 0 && Boolean(form.projectId))
+
+const projectOptions = computed(() =>
+  workspace.projects.map((p) => ({ label: p.name, value: p.id }))
+)
+
+const assigneeOptions = computed(() => [
+  { label: t('common.unassigned'), value: '' },
+  ...workspace.users.map((u) => ({ label: u.fullName, value: u.id })),
+])
+
 
 watch(
   () => props.taskToEdit,
@@ -290,53 +302,30 @@ defineExpose({ start, editTask })
 
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
-                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.project') }}</label>
-                  <div class="relative mt-1.5">
-                    <Folder class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                    <select
-                      v-model="form.projectId"
-                      class="field-input pl-10 pr-9"
-                    >
-                      <option disabled value="">{{ t('composer.selectProject') }}</option>
-                      <option v-for="project in workspace.projects" :key="project.id" :value="project.id">
-                        {{ project.name }}
-                      </option>
-                    </select>
-                    <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                  </div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">{{ t('composer.project') }}</label>
+                  <CustomSelect
+                    v-model="form.projectId"
+                    :options="projectOptions"
+                    :placeholder="t('composer.selectProject')"
+                    filter
+                  />
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.assignee') }}</label>
-                  <div class="relative mt-1.5">
-                    <UserCheck class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                    <select
-                      v-model="form.assigneeId"
-                      class="field-input pl-10 pr-9"
-                    >
-                      <option value="">{{ t('common.unassigned') }}</option>
-                      <option v-for="user in workspace.users" :key="user.id" :value="user.id">
-                        {{ user.fullName }}
-                      </option>
-                    </select>
-                    <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                  </div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">{{ t('composer.assignee') }}</label>
+                  <CustomSelect
+                    v-model="form.assigneeId"
+                    :options="assigneeOptions"
+                    filter
+                  />
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.status') }}</label>
-                  <div class="relative mt-1.5">
-                    <ListTodo class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                    <select
-                      v-model="form.status"
-                      class="field-input pl-10 pr-9"
-                    >
-                      <option v-for="status in STATUSES" :key="status.id" :value="status.id">
-                        {{ status.label }}
-                      </option>
-                    </select>
-                    <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                  </div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">{{ t('composer.status') }}</label>
+                  <CustomSelect
+                    v-model="form.status"
+                    :options="STATUSES"
+                  />
                 </div>
               </div>
 
@@ -429,19 +418,12 @@ defineExpose({ start, editTask })
 
                   <div>
                     <label class="block text-[11px] font-semibold text-muted mb-1">{{ t('eisenhower.assignedPriority') }}</label>
-                    <div class="relative">
-                      <Flag class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted" />
-                      <select
-                        :value="form.priority"
-                        class="field-input pl-8 pr-8 text-xs font-medium"
-                        @change="onPriorityChange(($event.target as HTMLSelectElement).value as TaskPriority)"
-                      >
-                        <option v-for="priority in PRIORITIES" :key="priority.id" :value="priority.id">
-                          {{ priority.label }}
-                        </option>
-                      </select>
-                      <ChevronDown class="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" />
-                    </div>
+                    <CustomSelect
+                      :modelValue="form.priority"
+                      :options="PRIORITIES"
+                      size="small"
+                      @update:modelValue="onPriorityChange($event as TaskPriority)"
+                    />
                   </div>
                 </div>
               </div>

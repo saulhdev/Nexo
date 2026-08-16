@@ -69,3 +69,112 @@ textarea {
   transform: translateX(24px);
   opacity: 0;
 }
+
+/* ==========================================================================
+   PrimeVue Theme Overrides (Nexo Palette)
+   ========================================================================== */
+.p-select,
+.p-multiselect {
+  background: var(--color-surface) !important;
+  border-color: var(--color-line) !important;
+  border-radius: 0.75rem !important; /* rounded-xl */
+  color: var(--color-ink) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.875rem !important;
+  transition: all 150ms ease !important;
+  box-shadow: none !important;
+}
+
+.p-select:not(.p-disabled):hover,
+.p-multiselect:not(.p-disabled):hover {
+  border-color: #c9bfab !important;
+}
+
+.p-select:not(.p-disabled).p-focus,
+.p-multiselect:not(.p-disabled).p-focus {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent) !important;
+}
+
+.p-select-label,
+.p-multiselect-label {
+  padding: 0.45rem 0.75rem !important;
+  font-size: 0.8125rem !important;
+  color: var(--color-ink) !important;
+}
+
+.p-select-label.p-placeholder,
+.p-multiselect-label.p-placeholder {
+  color: var(--color-muted) !important;
+}
+
+.p-select-overlay,
+.p-multiselect-overlay {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-line) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 25px -5px rgba(27, 25, 20, 0.1), 0 8px 10px -6px rgba(27, 25, 20, 0.06) !important;
+  z-index: 10650 !important;
+}
+
+.p-select-option,
+.p-multiselect-option {
+  padding: 0.45rem 0.75rem !important;
+  font-size: 0.8125rem !important;
+  color: var(--color-ink) !important;
+  border-radius: 0.5rem !important;
+  margin: 0.125rem 0.25rem !important;
+  transition: background-color 120ms ease !important;
+}
+
+.p-select-option:not(.p-select-option-selected):not(.p-disabled).p-focus,
+.p-multiselect-option:not(.p-multiselect-option-selected):not(.p-disabled).p-focus,
+.p-select-option:not(.p-select-option-selected):not(.p-disabled):hover,
+.p-multiselect-option:not(.p-multiselect-option-selected):not(.p-disabled):hover {
+  background: var(--color-canvas) !important;
+  color: var(--color-ink) !important;
+}
+
+.p-select-option.p-select-option-selected,
+.p-multiselect-option.p-multiselect-option-selected {
+  background: color-mix(in oklab, var(--color-accent) 15%, var(--color-surface)) !important;
+  color: var(--color-accent-dark) !important;
+  font-weight: 600 !important;
+}
+
+.p-select-header,
+.p-multiselect-header {
+  padding: 0.5rem 0.6rem !important;
+  background: var(--color-canvas) !important;
+  border-bottom: 1px solid var(--color-line) !important;
+}
+
+.p-select-filter,
+.p-multiselect-filter {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-line) !important;
+  border-radius: 0.5rem !important;
+  padding: 0.35rem 0.6rem !important;
+  font-size: 0.8125rem !important;
+  color: var(--color-ink) !important;
+}
+
+.p-select-filter:focus,
+.p-multiselect-filter:focus {
+  border-color: var(--color-accent) !important;
+  outline: none !important;
+}
+
+/* Compact sizing class for table inline edit & small filters */
+.p-select-sm .p-select-label,
+.p-multiselect-sm .p-multiselect-label {
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.75rem !important;
+}
+
+.p-select-sm,
+.p-multiselect-sm {
+  border-radius: 0.5rem !important;
+  font-size: 0.75rem !important;
+}
+

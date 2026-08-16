@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Inbox, Pencil, Trash2 } from 'lucide-vue-next'
+import CustomSelect from '@/components/CustomSelect.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
 import { getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
@@ -13,6 +14,36 @@ const { t } = useI18n()
 const workspace = useWorkspaceStore()
 const composerRef = ref<InstanceType<typeof TaskComposer> | null>(null)
 const composer = computed(() => workspace.projects[0])
+
+const statusFilterOptions = computed(() => [
+  { label: t('list.allStatuses'), value: 'all' },
+  ...STATUSES,
+])
+
+const priorityFilterOptions = computed(() => [
+  { label: t('list.allPriorities'), value: 'all' },
+  ...PRIORITIES,
+])
+
+const projectFilterOptions = computed(() => [
+  { label: t('list.allProjects'), value: 'all' },
+  ...workspace.projects.map((p) => ({ label: p.name, value: p.id })),
+])
+
+const assigneeFilterOptions = computed(() => [
+  { label: t('list.allAssignees'), value: 'all' },
+  { label: t('common.unassigned'), value: 'unassigned' },
+  ...workspace.users.map((u) => ({ label: u.fullName, value: u.id })),
+])
+
+const assigneeOptions = computed(() => [
+  { label: t('common.unassigned'), value: '' },
+  ...workspace.users.map((u) => ({ label: u.fullName, value: u.id })),
+])
+
+const projectOptions = computed(() =>
+  workspace.projects.map((p) => ({ label: p.name, value: p.id }))
+)
 
 function open(id: string) {
   void workspace.openTask(id)
@@ -29,24 +60,20 @@ async function removeTask(id: string, e: Event) {
   await workspace.deleteTask(id)
 }
 
-async function changeStatus(task: Task, status: TaskStatus, e: Event) {
-  e.stopPropagation()
+async function changeStatus(task: Task, status: TaskStatus) {
   await workspace.updateTask(task.id, { status })
 }
 
-async function changePriority(task: Task, priority: TaskPriority, e: Event) {
-  e.stopPropagation()
+async function changePriority(task: Task, priority: TaskPriority) {
   const ui = getUrgencyImportanceFromPriority(priority)
   await workspace.updateTask(task.id, { priority, isUrgent: ui.isUrgent, isImportant: ui.isImportant })
 }
 
-async function changeAssignee(task: Task, assigneeId: string, e: Event) {
-  e.stopPropagation()
+async function changeAssignee(task: Task, assigneeId: string) {
   await workspace.updateTask(task.id, { assigneeId: assigneeId || null })
 }
 
-async function changeProject(task: Task, projectId: string, e: Event) {
-  e.stopPropagation()
+async function changeProject(task: Task, projectId: string) {
   await workspace.updateTask(task.id, { projectId })
 }
 
@@ -74,62 +101,53 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
       <TaskComposer ref="composerRef" v-if="composer" @created="open" />
     </div>
 
-    <div class="mt-6 flex flex-wrap gap-2">
+    <div class="mt-6 flex flex-wrap items-center gap-2">
       <input
         :value="workspace.filters.search"
         class="w-full max-w-xs rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
         :placeholder="t('list.searchPlaceholder')"
         @input="workspace.setFilter('search', ($event.target as HTMLInputElement).value)"
       />
-      <select
-        :value="workspace.filters.status"
-        class="rounded-xl border border-line bg-surface px-3 py-2 text-sm"
-        @change="workspace.setFilter('status', ($event.target as HTMLSelectElement).value as never)"
-      >
-        <option value="all">{{ t('list.allStatuses') }}</option>
-        <option v-for="status in STATUSES" :key="status.id" :value="status.id">{{ status.label }}</option>
-      </select>
-      <select
-        :value="workspace.filters.priority"
-        class="rounded-xl border border-line bg-surface px-3 py-2 text-sm"
-        @change="workspace.setFilter('priority', ($event.target as HTMLSelectElement).value as never)"
-      >
-        <option value="all">{{ t('list.allPriorities') }}</option>
-        <option v-for="priority in PRIORITIES" :key="priority.id" :value="priority.id">{{ priority.label }}</option>
-      </select>
-      <select
-        :value="workspace.filters.projectId"
-        class="rounded-xl border border-line bg-surface px-3 py-2 text-sm"
-        @change="workspace.setFilter('projectId', ($event.target as HTMLSelectElement).value)"
-      >
-        <option value="all">{{ t('list.allProjects') }}</option>
-        <option v-for="project in workspace.projects" :key="project.id" :value="project.id">
-          {{ project.name }}
-        </option>
-      </select>
-      <select
-        :value="workspace.filters.assigneeId"
-        class="rounded-xl border border-line bg-surface px-3 py-2 text-sm"
-        @change="workspace.setFilter('assigneeId', ($event.target as HTMLSelectElement).value as never)"
-      >
-        <option value="all">{{ t('list.allAssignees') }}</option>
-        <option value="unassigned">{{ t('common.unassigned') }}</option>
-        <option v-for="user in workspace.users" :key="user.id" :value="user.id">
-          {{ user.fullName }}
-        </option>
-      </select>
+      <div class="w-40">
+        <CustomSelect
+          :modelValue="workspace.filters.status"
+          :options="statusFilterOptions"
+          @update:modelValue="workspace.setFilter('status', $event as never)"
+        />
+      </div>
+      <div class="w-40">
+        <CustomSelect
+          :modelValue="workspace.filters.priority"
+          :options="priorityFilterOptions"
+          @update:modelValue="workspace.setFilter('priority', $event as never)"
+        />
+      </div>
+      <div class="w-44">
+        <CustomSelect
+          :modelValue="workspace.filters.projectId"
+          :options="projectFilterOptions"
+          @update:modelValue="workspace.setFilter('projectId', $event)"
+        />
+      </div>
+      <div class="w-44">
+        <CustomSelect
+          :modelValue="workspace.filters.assigneeId"
+          :options="assigneeFilterOptions"
+          @update:modelValue="workspace.setFilter('assigneeId', $event as never)"
+        />
+      </div>
     </div>
 
-    <div class="mt-4 rounded-2xl border border-line bg-surface shadow-sm">
+    <div class="mt-4 rounded-2xl border border-line bg-surface shadow-sm overflow-hidden">
       <table class="w-full table-fixed text-left text-sm">
         <colgroup>
           <col />
+          <col class="w-[140px]" />
           <col class="w-[130px]" />
           <col class="w-[120px]" />
-          <col class="w-[110px]" />
           <col class="w-[130px]" />
           <col class="w-[130px]" />
-          <col class="w-[130px]" />
+          <col class="w-[140px]" />
           <col class="w-[80px]" />
         </colgroup>
         <thead class="bg-canvas/80 text-[11px] uppercase tracking-wide text-muted">
@@ -159,43 +177,37 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
             </td>
 
             <!-- Asignado (editable) -->
-            <td class="px-3 py-3" @click.stop>
-              <select
-                :value="task.assigneeId ?? ''"
-                class="w-full rounded-lg border border-line bg-canvas px-2 py-1 text-xs text-ink outline-none focus:border-accent"
-                @change="changeAssignee(task, ($event.target as HTMLSelectElement).value, $event)"
-              >
-                <option value="">{{ t('common.unassigned') }}</option>
-                <option v-for="user in workspace.users" :key="user.id" :value="user.id">
-                  {{ user.fullName }}
-                </option>
-              </select>
+            <td class="px-3 py-2" @click.stop>
+              <CustomSelect
+                :modelValue="task.assigneeId ?? ''"
+                :options="assigneeOptions"
+                size="small"
+                @update:modelValue="changeAssignee(task, $event)"
+              />
             </td>
 
             <!-- Estado (editable) -->
-            <td class="px-3 py-3" @click.stop>
-              <select
-                :value="task.status"
-                class="w-full rounded-lg border border-line bg-canvas px-2 py-1 text-xs font-medium text-ink outline-none focus:border-accent"
-                @change="changeStatus(task, ($event.target as HTMLSelectElement).value as TaskStatus, $event)"
-              >
-                <option v-for="s in STATUSES" :key="s.id" :value="s.id">{{ s.label }}</option>
-              </select>
+            <td class="px-3 py-2" @click.stop>
+              <CustomSelect
+                :modelValue="task.status"
+                :options="STATUSES"
+                size="small"
+                @update:modelValue="changeStatus(task, $event as TaskStatus)"
+              />
             </td>
 
             <!-- Prioridad (editable) -->
-            <td class="px-3 py-3" @click.stop>
-              <select
-                :value="task.priority"
-                class="w-full rounded-lg border border-line bg-canvas px-2 py-1 text-xs font-medium text-ink outline-none focus:border-accent"
-                @change="changePriority(task, ($event.target as HTMLSelectElement).value as TaskPriority, $event)"
-              >
-                <option v-for="p in PRIORITIES" :key="p.id" :value="p.id">{{ p.label }}</option>
-              </select>
+            <td class="px-3 py-2" @click.stop>
+              <CustomSelect
+                :modelValue="task.priority"
+                :options="PRIORITIES"
+                size="small"
+                @update:modelValue="changePriority(task, $event as TaskPriority)"
+              />
             </td>
 
             <!-- Fecha Inicio (editable) -->
-            <td class="px-3 py-3" @click.stop>
+            <td class="px-3 py-2" @click.stop>
               <input
                 :value="task.startDate ?? ''"
                 type="date"
@@ -205,7 +217,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
             </td>
 
             <!-- Fecha Vencimiento (editable) -->
-            <td class="px-3 py-3" @click.stop>
+            <td class="px-3 py-2" @click.stop>
               <input
                 :value="task.dueDate ?? ''"
                 type="date"
@@ -216,16 +228,13 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
             </td>
 
             <!-- Proyecto (editable) -->
-            <td class="px-3 py-3" @click.stop>
-              <select
-                :value="task.projectId"
-                class="w-full rounded-lg border border-line bg-canvas px-2 py-1 text-xs font-medium text-ink outline-none focus:border-accent"
-                @change="changeProject(task, ($event.target as HTMLSelectElement).value, $event)"
-              >
-                <option v-for="proj in workspace.projects" :key="proj.id" :value="proj.id">
-                  {{ proj.name }}
-                </option>
-              </select>
+            <td class="px-3 py-2" @click.stop>
+              <CustomSelect
+                :modelValue="task.projectId"
+                :options="projectOptions"
+                size="small"
+                @update:modelValue="changeProject(task, $event)"
+              />
             </td>
 
             <!-- Acciones -->
@@ -252,13 +261,13 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
           </tr>
         </tbody>
       </table>
-      <div v-if="!workspace.filteredTasks.length" class="p-6">
+
+      <div v-if="workspace.filteredTasks.length === 0" class="p-8">
         <EmptyState
+          :icon="Inbox"
           :title="t('list.emptyTitle')"
-          :description="t('list.emptyDescription')"
-        >
-          <template #icon><Inbox class="size-5" /></template>
-        </EmptyState>
+          :description="t('list.emptyDesc')"
+        />
       </div>
     </div>
   </div>
