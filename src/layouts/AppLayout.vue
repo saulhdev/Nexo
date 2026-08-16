@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import { CalendarDays, Columns3, Globe, Grid2x2, LayoutDashboard, ListChecks, LogOut, Plus, User } from 'lucide-vue-next'
+import { CalendarDays, Columns3, Globe, Grid2x2, LayoutDashboard, ListChecks, LogOut, Pencil, Plus, User } from 'lucide-vue-next'
 import { APP_NAME } from '@/constants'
 import { useI18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
 import ProjectModal from '@/components/ProjectModal.vue'
 import TaskDrawer from '@/components/TaskDrawer.vue'
+import type { Project } from '@/types'
 
 const { t, locale, setLocale } = useI18n()
 const route = useRoute()
@@ -15,6 +16,17 @@ const router = useRouter()
 const auth = useAuthStore()
 const workspace = useWorkspaceStore()
 const projectOpen = ref(false)
+const projectToEdit = ref<Project | null>(null)
+
+function openNewProject() {
+  projectToEdit.value = null
+  projectOpen.value = true
+}
+
+function openEditProject(project: Project) {
+  projectToEdit.value = project
+  projectOpen.value = true
+}
 
 const nav = computed(() => [
   { name: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
@@ -101,7 +113,7 @@ function filterProject(id: string) {
       <div class="mt-6 px-5">
         <div class="flex items-center justify-between">
           <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">{{ t('common.projects') }}</p>
-          <button class="text-white/50 hover:text-white" :title="t('common.newProject')" @click="projectOpen = true">
+          <button class="text-white/50 hover:text-white" :title="t('common.newProject')" @click="openNewProject">
             <Plus class="size-4" />
           </button>
         </div>
@@ -114,16 +126,27 @@ function filterProject(id: string) {
             <span class="size-2 rounded-full bg-white/30" />
             {{ t('common.all') }}
           </button>
-          <button
+          <div
             v-for="project in workspace.projects"
             :key="project.id"
-            class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-white/70 hover:bg-white/5"
+            class="group flex items-center justify-between rounded-lg px-2 py-1.5 text-sm text-white/70 transition hover:bg-white/5"
             :class="workspace.filters.projectId === project.id && 'bg-white/8 text-white'"
-            @click="filterProject(project.id)"
           >
-            <span class="size-2 rounded-full" :style="{ background: project.color }" />
-            <span class="truncate">{{ project.name }}</span>
-          </button>
+            <button
+              class="flex min-w-0 flex-1 items-center gap-2 text-left"
+              @click="filterProject(project.id)"
+            >
+              <span class="size-2 shrink-0 rounded-full" :style="{ background: project.color }" />
+              <span class="truncate">{{ project.name }}</span>
+            </button>
+            <button
+              class="p-0.5 text-white/40 opacity-0 transition group-hover:opacity-100 hover:text-white"
+              :title="t('common.editProject')"
+              @click.stop="openEditProject(project)"
+            >
+              <Pencil class="size-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -172,6 +195,6 @@ function filterProject(id: string) {
     </div>
 
     <TaskDrawer />
-    <ProjectModal v-model:open="projectOpen" @created="filterProject" />
+    <ProjectModal v-model:open="projectOpen" :project="projectToEdit" @created="filterProject" />
   </div>
 </template>

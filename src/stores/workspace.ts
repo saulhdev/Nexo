@@ -13,6 +13,7 @@ import type {
   TaskAttachment,
   TaskFilters,
   TaskStatus,
+  UpdateProjectInput,
   UpdateTaskInput,
   User,
 } from '@/types'
@@ -143,6 +144,32 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       return project
     } catch (err) {
       error.value = getErrorMessage(err, 'No se pudo crear el proyecto')
+      throw err
+    }
+  }
+
+  async function updateProject(id: string, input: UpdateProjectInput) {
+    error.value = ''
+    try {
+      const updated = await backend.updateProject(id, input)
+      const index = projects.value.findIndex((p) => p.id === id)
+      if (index >= 0) projects.value[index] = updated
+      tasks.value = tasks.value.map((t) => {
+        if (t.projectId === id && t.project) {
+          return {
+            ...t,
+            project: {
+              ...t.project,
+              name: updated.name,
+              color: updated.color,
+            },
+          }
+        }
+        return t
+      })
+      return updated
+    } catch (err) {
+      error.value = getErrorMessage(err, 'No se pudo actualizar el proyecto')
       throw err
     }
   }
@@ -299,6 +326,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     tasksByStatus,
     bootstrap,
     createProject,
+    updateProject,
     createTask,
     updateTask,
     deleteTask,

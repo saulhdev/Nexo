@@ -7,6 +7,7 @@ import type {
   Task,
   TaskAttachment,
   TaskFilters,
+  UpdateProjectInput,
   UpdateTaskInput,
   User,
 } from '@/types'
@@ -23,6 +24,7 @@ export interface Backend {
 
   listProjects(): Promise<Project[]>
   createProject(input: CreateProjectInput): Promise<Project>
+  updateProject(id: string, input: UpdateProjectInput): Promise<Project>
 
   listTasks(filters?: TaskFilters): Promise<Task[]>
   getTask(id: string): Promise<Task>

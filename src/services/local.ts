@@ -11,6 +11,7 @@ import type {
   Task,
   TaskAttachment,
   TaskFilters,
+  UpdateProjectInput,
   UpdateTaskInput,
   User,
 } from '@/types'
@@ -290,6 +291,16 @@ export function createLocalBackend(): Backend {
         createdAt: nowISO(),
       }
       db.projects.push(project)
+      save(db)
+      return project
+    },
+
+    async updateProject(id: string, input: UpdateProjectInput) {
+      const db = load()
+      const project = db.projects.find((p) => p.id === id)
+      if (!project) throw new Error('Proyecto no encontrado')
+      if (input.name !== undefined) project.name = input.name.trim()
+      if (input.color !== undefined) project.color = input.color
       save(db)
       return project
     },

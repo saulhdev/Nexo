@@ -13,6 +13,7 @@ import type {
   TaskFilters,
   TaskPriority,
   TaskStatus,
+  UpdateProjectInput,
   UpdateTaskInput,
   User,
 } from '@/types'
@@ -379,6 +380,21 @@ export function createSupabaseBackend(): Backend {
         .select()
         .single()
       if (error || !data) throw toError(error, 'No se pudo crear el proyecto')
+      return mapProject(data as ProjectRow)
+    },
+
+    async updateProject(id: string, input: UpdateProjectInput) {
+      const updateData: Record<string, any> = {}
+      if (input.name !== undefined) updateData.name = input.name.trim()
+      if (input.color !== undefined) updateData.color = input.color
+
+      const { data, error } = await getSupabase()
+        .from('projects')
+        .update(updateData)
+        .eq('id', id)
+        .select('*')
+        .single()
+      if (error || !data) throw toError(error, 'No se pudo actualizar el proyecto')
       return mapProject(data as ProjectRow)
     },
 

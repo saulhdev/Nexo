@@ -119,6 +119,11 @@ export interface CreateProjectInput {
   color?: string
 }
 
+export interface UpdateProjectInput {
+  name?: string
+  color?: string
+}
+
 export interface DashboardStats {
   total: number
   todo: number

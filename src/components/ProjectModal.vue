@@ -3,38 +3,69 @@ import { computed, ref, watch } from 'vue'
 import { PROJECT_COLORS } from '@/constants'
 import { useI18n } from '@/i18n'
 import { useWorkspaceStore } from '@/stores/workspace'
+import type { Project } from '@/types'
 
 const { t } = useI18n()
+const props = defineProps<{
+  project?: Project | null
+}>()
+
 const open = defineModel<boolean>('open', { default: false })
-const emit = defineEmits<{ created: [id: string] }>()
+const emit = defineEmits<{
+  created: [id: string]
+  updated: [id: string]
+}>()
+
 const workspace = useWorkspaceStore()
 const name = ref('')
 const color = ref(PROJECT_COLORS[0])
 const submitting = ref(false)
 const errorMessage = ref('')
 
+const isEditing = computed(() => !!props.project)
 const canSubmit = computed(() => name.value.trim().length > 0)
 
-watch(open, (isOpen) => {
-  if (isOpen) {
-    name.value = ''
-    color.value = PROJECT_COLORS[0]
-    errorMessage.value = ''
-  }
-})
+watch(
+  [open, () => props.project],
+  ([isOpen]) => {
+    if (isOpen) {
+      if (props.project) {
+        name.value = props.project.name
+        color.value = props.project.color
+      } else {
+        name.value = ''
+        color.value = PROJECT_COLORS[0]
+      }
+      errorMessage.value = ''
+    }
+  },
+  { immediate: true }
+)
 
 async function submit() {
   if (!canSubmit.value) return
   submitting.value = true
   errorMessage.value = ''
   try {
-    const project = await workspace.createProject({ name: name.value.trim(), color: color.value })
-    name.value = ''
-    open.value = false
-    emit('created', project.id)
+    if (props.project) {
+      const updated = await workspace.updateProject(props.project.id, {
+        name: name.value.trim(),
+        color: color.value,
+      })
+      open.value = false
+      emit('updated', updated.id)
+    } else {
+      const project = await workspace.createProject({
+        name: name.value.trim(),
+        color: color.value,
+      })
+      name.value = ''
+      open.value = false
+      emit('created', project.id)
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : (err as { message?: string })?.message
-    errorMessage.value = msg || t('projectModal.error')
+    errorMessage.value = msg || (isEditing.value ? t('projectModal.errorUpdate') : t('projectModal.error'))
   } finally {
     submitting.value = false
   }
@@ -45,8 +76,12 @@ async function submit() {
   <Teleport to="body">
     <div v-if="open" class="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-4">
       <form class="w-full max-w-md rounded-2xl bg-surface p-5 shadow-xl" @submit.prevent="submit">
-        <h2 class="text-lg font-semibold">{{ t('projectModal.title') }}</h2>
-        <p class="mt-1 text-sm text-muted">{{ t('projectModal.subtitle') }}</p>
+        <h2 class="text-lg font-semibold">
+          {{ isEditing ? t('projectModal.titleEdit') : t('projectModal.title') }}
+        </h2>
+        <p class="mt-1 text-sm text-muted">
+          {{ isEditing ? t('projectModal.subtitleEdit') : t('projectModal.subtitle') }}
+        </p>
 
         <p v-if="errorMessage" class="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
           {{ errorMessage }}
@@ -79,7 +114,12 @@ async function submit() {
             class="rounded-xl bg-accent px-3.5 py-2 text-sm font-semibold text-white transition disabled:opacity-50"
             :disabled="!canSubmit || submitting"
           >
-            {{ submitting ? t('common.creating') : t('common.create') }}
+            <template v-if="isEditing">
+              {{ submitting ? t('common.saving') : t('common.save') }}
+            </template>
+            <template v-else>
+              {{ submitting ? t('common.creating') : t('common.create') }}
+            </template>
           </button>
         </div>
       </form>

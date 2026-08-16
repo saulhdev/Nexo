@@ -18,6 +18,7 @@ export default {
   'common.localMode': 'Modo local. Conecta Supabase para cuentas y sincronización.',
   'common.logout': 'Salir',
   'common.newProject': 'Nuevo proyecto',
+  'common.editProject': 'Editar proyecto',
   'common.language': 'Idioma',
 
   // ── Nav ──
@@ -234,11 +235,14 @@ export default {
 
   // ── Project Modal ──
   'projectModal.title': 'Nuevo proyecto',
+  'projectModal.titleEdit': 'Editar proyecto',
   'projectModal.subtitle': 'Agrupa tareas por equipo, cliente o área.',
+  'projectModal.subtitleEdit': 'Modifica el nombre o el color del proyecto.',
   'projectModal.name': 'Nombre',
   'projectModal.namePlaceholder': 'Producto, Marketing…',
   'projectModal.color': 'Color',
   'projectModal.error': 'No se pudo crear el proyecto',
+  'projectModal.errorUpdate': 'No se pudo actualizar el proyecto',
 
   // ── Activity ──
   'activity.createdTask': 'creó la tarea',

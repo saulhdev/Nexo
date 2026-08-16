@@ -18,6 +18,7 @@ export default {
   'common.localMode': 'Local mode. Connect Supabase for accounts and sync.',
   'common.logout': 'Log out',
   'common.newProject': 'New project',
+  'common.editProject': 'Edit project',
   'common.language': 'Language',
 
   // ── Nav ──
@@ -234,11 +235,14 @@ export default {
 
   // ── Project Modal ──
   'projectModal.title': 'New project',
+  'projectModal.titleEdit': 'Edit project',
   'projectModal.subtitle': 'Group tasks by team, client, or area.',
+  'projectModal.subtitleEdit': 'Modify project name or color.',
   'projectModal.name': 'Name',
   'projectModal.namePlaceholder': 'Product, Marketing…',
   'projectModal.color': 'Color',
   'projectModal.error': 'Could not create the project',
+  'projectModal.errorUpdate': 'Could not update the project',
 
   // ── Activity ──
   'activity.createdTask': 'created the task',
