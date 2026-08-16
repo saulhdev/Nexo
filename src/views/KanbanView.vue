@@ -60,6 +60,7 @@ function open(id: string) {
         <div v-if="composerFor === column.id" class="px-3 pb-2">
           <TaskComposer
             :default-status="column.id"
+            :show-button="false"
             compact
             auto-open
             @created="
