@@ -60,7 +60,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
 </script>
 
 <template>
-  <div class="mx-auto max-w-6xl">
+  <div>
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <h1 class="text-3xl font-semibold tracking-tight">Lista</h1>
@@ -118,11 +118,21 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
       </select>
     </div>
 
-    <div class="mt-4 overflow-x-auto rounded-2xl border border-line bg-surface shadow-sm">
-      <table class="w-full text-left text-sm min-w-[850px]">
+    <div class="mt-4 rounded-2xl border border-line bg-surface shadow-sm">
+      <table class="w-full table-fixed text-left text-sm">
+        <colgroup>
+          <col />
+          <col class="w-[130px]" />
+          <col class="w-[120px]" />
+          <col class="w-[110px]" />
+          <col class="w-[130px]" />
+          <col class="w-[130px]" />
+          <col class="w-[130px]" />
+          <col class="w-[80px]" />
+        </colgroup>
         <thead class="bg-canvas/80 text-[11px] uppercase tracking-wide text-muted">
           <tr>
-            <th class="px-4 py-3 font-semibold min-w-56">Tarea</th>
+            <th class="px-4 py-3 font-semibold">Tarea</th>
             <th class="px-3 py-3 font-semibold">Asignado</th>
             <th class="px-3 py-3 font-semibold">Estado</th>
             <th class="px-3 py-3 font-semibold">Prioridad</th>
@@ -139,9 +149,9 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
             class="group border-t border-line/80 hover:bg-canvas/70"
           >
             <!-- Título y Descripción -->
-            <td class="px-4 py-3 cursor-pointer" @click="open(task.id)">
-              <p class="font-medium text-ink hover:text-accent transition">{{ task.title }}</p>
-              <p v-if="task.description" class="mt-0.5 line-clamp-1 text-xs text-muted">
+            <td class="px-4 py-3 cursor-pointer truncate" @click="open(task.id)">
+              <p class="font-medium text-ink hover:text-accent transition truncate">{{ task.title }}</p>
+              <p v-if="task.description" class="mt-0.5 line-clamp-1 text-xs text-muted truncate">
                 {{ task.description }}
               </p>
             </td>
@@ -150,7 +160,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
             <td class="px-3 py-3" @click.stop>
               <select
                 :value="task.assigneeId ?? ''"
-                class="rounded-lg border border-line bg-canvas px-2 py-1 text-xs text-ink outline-none focus:border-accent"
+                class="w-full rounded-lg border border-line bg-canvas px-2 py-1 text-xs text-ink outline-none focus:border-accent"
                 @change="changeAssignee(task, ($event.target as HTMLSelectElement).value, $event)"
               >
                 <option value="">Sin asignar</option>
@@ -164,7 +174,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
             <td class="px-3 py-3" @click.stop>
               <select
                 :value="task.status"
-                class="rounded-lg border border-line bg-canvas px-2 py-1 text-xs font-medium text-ink outline-none focus:border-accent"
+                class="w-full rounded-lg border border-line bg-canvas px-2 py-1 text-xs font-medium text-ink outline-none focus:border-accent"
                 @change="changeStatus(task, ($event.target as HTMLSelectElement).value as TaskStatus, $event)"
               >
                 <option v-for="s in STATUSES" :key="s.id" :value="s.id">{{ s.label }}</option>
@@ -175,7 +185,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
             <td class="px-3 py-3" @click.stop>
               <select
                 :value="task.priority"
-                class="rounded-lg border border-line bg-canvas px-2 py-1 text-xs font-medium text-ink outline-none focus:border-accent"
+                class="w-full rounded-lg border border-line bg-canvas px-2 py-1 text-xs font-medium text-ink outline-none focus:border-accent"
                 @change="changePriority(task, ($event.target as HTMLSelectElement).value as TaskPriority, $event)"
               >
                 <option v-for="p in PRIORITIES" :key="p.id" :value="p.id">{{ p.label }}</option>
@@ -187,7 +197,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
               <input
                 :value="task.startDate ?? ''"
                 type="date"
-                class="rounded-lg border border-line bg-canvas px-1.5 py-1 text-xs text-muted outline-none focus:border-accent"
+                class="w-full rounded-lg border border-line bg-canvas px-1.5 py-1 text-xs text-muted outline-none focus:border-accent"
                 @change="changeStartDate(task, ($event.target as HTMLInputElement).value, $event)"
               />
             </td>
@@ -197,7 +207,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
               <input
                 :value="task.dueDate ?? ''"
                 type="date"
-                class="rounded-lg border border-line bg-canvas px-1.5 py-1 text-xs outline-none focus:border-accent"
+                class="w-full rounded-lg border border-line bg-canvas px-1.5 py-1 text-xs outline-none focus:border-accent"
                 :class="isOverdue(task.dueDate, task.status) ? 'font-medium text-rose-600 border-rose-300' : 'text-muted'"
                 @change="changeDueDate(task, ($event.target as HTMLInputElement).value, $event)"
               />
@@ -207,7 +217,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
             <td class="px-3 py-3" @click.stop>
               <select
                 :value="task.projectId"
-                class="rounded-lg border border-line bg-canvas px-2 py-1 text-xs font-medium text-ink outline-none focus:border-accent"
+                class="w-full rounded-lg border border-line bg-canvas px-2 py-1 text-xs font-medium text-ink outline-none focus:border-accent"
                 @change="changeProject(task, ($event.target as HTMLSelectElement).value, $event)"
               >
                 <option v-for="proj in workspace.projects" :key="proj.id" :value="proj.id">
