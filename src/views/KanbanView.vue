@@ -5,10 +5,12 @@ import draggable from 'vuedraggable'
 import PriorityBadge from '@/components/PriorityBadge.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
 import { STATUSES } from '@/constants'
+import { useI18n } from '@/i18n'
 import { formatDateRange, isOverdue } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Task, TaskStatus } from '@/types'
 
+const { t } = useI18n()
 const workspace = useWorkspaceStore()
 const composerFor = ref<TaskStatus | null>(null)
 const composerRef = ref<InstanceType<typeof TaskComposer> | null>(null)
@@ -52,8 +54,8 @@ function getInitials(name?: string) {
   <div class="flex h-[calc(100vh-5.5rem)] flex-col">
     <div class="mb-5 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-semibold tracking-tight">Tablero</h1>
-        <p class="mt-1 text-sm text-muted">Arrastra las tarjetas para cambiar el estado.</p>
+        <h1 class="text-3xl font-semibold tracking-tight">{{ t('board.title') }}</h1>
+        <p class="mt-1 text-sm text-muted">{{ t('board.subtitle') }}</p>
       </div>
       <TaskComposer ref="composerRef" @created="open" />
     </div>
@@ -111,7 +113,7 @@ function getInitials(name?: string) {
                   <button
                     type="button"
                     class="opacity-0 group-hover:opacity-100 rounded-md p-1 text-muted hover:bg-canvas hover:text-accent transition cursor-pointer"
-                    title="Editar tarea"
+                    :title="t('board.editTask')"
                     @click="edit(element, $event)"
                   >
                     <Pencil class="size-3.5" />
@@ -137,7 +139,7 @@ function getInitials(name?: string) {
                   <span
                     v-if="element.assignee"
                     class="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[10px] font-bold text-accent"
-                    :title="`Asignado a: ${element.assignee.fullName}`"
+                    :title="`${t('board.assignedTo')}: ${element.assignee.fullName}`"
                   >
                     {{ getInitials(element.assignee.fullName) }}
                   </span>

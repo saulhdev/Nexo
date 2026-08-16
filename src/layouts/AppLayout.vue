@@ -1,30 +1,32 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import { CalendarDays, Columns3, Grid2x2, LayoutDashboard, ListChecks, LogOut, Plus, User } from 'lucide-vue-next'
+import { CalendarDays, Columns3, Globe, Grid2x2, LayoutDashboard, ListChecks, LogOut, Plus, User } from 'lucide-vue-next'
 import { APP_NAME } from '@/constants'
+import { useI18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
 import ProjectModal from '@/components/ProjectModal.vue'
 import TaskDrawer from '@/components/TaskDrawer.vue'
 
+const { t, locale, setLocale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const workspace = useWorkspaceStore()
 const projectOpen = ref(false)
 
-const nav = [
-  { name: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { name: 'list', label: 'Lista', icon: ListChecks },
-  { name: 'board', label: 'Tablero', icon: Columns3 },
-  { name: 'matrix', label: 'Matriz', icon: Grid2x2 },
-  { name: 'calendar', label: 'Calendario', icon: CalendarDays },
-  { name: 'profile', label: 'Mi Perfil', icon: User },
-]
+const nav = computed(() => [
+  { name: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+  { name: 'list', label: t('nav.list'), icon: ListChecks },
+  { name: 'board', label: t('nav.board'), icon: Columns3 },
+  { name: 'matrix', label: t('nav.matrix'), icon: Grid2x2 },
+  { name: 'calendar', label: t('nav.calendar'), icon: CalendarDays },
+  { name: 'profile', label: t('nav.profile'), icon: User },
+])
 
 const initials = computed(() => {
-  const name = auth.user?.fullName || 'Tú'
+  const name = auth.user?.fullName || t('common.you')
   return name
     .split(' ')
     .slice(0, 2)
@@ -32,6 +34,10 @@ const initials = computed(() => {
     .join('')
     .toUpperCase()
 })
+
+function toggleLocale() {
+  setLocale(locale.value === 'es' ? 'en' : 'es')
+}
 
 onMounted(() => {
   void workspace.bootstrap()
@@ -75,7 +81,7 @@ function filterProject(id: string) {
         <span class="grid size-8 place-items-center rounded-xl bg-accent text-sm font-bold text-white">N</span>
         <div>
           <p class="text-sm font-semibold tracking-wide">{{ APP_NAME }}</p>
-          <p class="text-[11px] text-white/45">Gestión de Tareas</p>
+          <p class="text-[11px] text-white/45">{{ t('common.appSubtitle') }}</p>
         </div>
       </div>
 
@@ -94,8 +100,8 @@ function filterProject(id: string) {
 
       <div class="mt-6 px-5">
         <div class="flex items-center justify-between">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">Proyectos</p>
-          <button class="text-white/50 hover:text-white" title="Nuevo proyecto" @click="projectOpen = true">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">{{ t('common.projects') }}</p>
+          <button class="text-white/50 hover:text-white" :title="t('common.newProject')" @click="projectOpen = true">
             <Plus class="size-4" />
           </button>
         </div>
@@ -106,7 +112,7 @@ function filterProject(id: string) {
             @click="filterProject('all')"
           >
             <span class="size-2 rounded-full bg-white/30" />
-            Todos
+            {{ t('common.all') }}
           </button>
           <button
             v-for="project in workspace.projects"
@@ -122,8 +128,22 @@ function filterProject(id: string) {
       </div>
 
       <div class="mt-auto border-t border-sidebar-line p-4">
+        <!-- Language toggle -->
+        <button
+          class="mb-3 flex w-full items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-[11px] leading-relaxed text-white/55 transition hover:bg-white/10 hover:text-white/80"
+          @click="toggleLocale"
+        >
+          <span class="flex items-center gap-2">
+            <Globe class="size-3.5" />
+            {{ t('common.language') }}
+          </span>
+          <span class="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/70">
+            {{ locale === 'es' ? 'ES 🇪🇸' : 'EN 🇺🇸' }}
+          </span>
+        </button>
+
         <div v-if="auth.isLocal" class="mb-3 rounded-xl bg-white/5 px-3 py-2 text-[11px] leading-relaxed text-white/55">
-          Modo local. Conecta Supabase para cuentas y sincronización.
+          {{ t('common.localMode') }}
         </div>
         <div class="flex items-center gap-2">
           <RouterLink :to="{ name: 'profile' }" class="flex min-w-0 flex-1 items-center gap-2 rounded-xl p-1 text-left transition hover:bg-white/5">
@@ -135,7 +155,7 @@ function filterProject(id: string) {
               <p class="truncate text-[11px] text-white/40">{{ auth.user?.email }}</p>
             </div>
           </RouterLink>
-          <button v-if="!auth.isLocal" class="p-1 text-white/50 hover:text-white" title="Salir" @click="logout">
+          <button v-if="!auth.isLocal" class="p-1 text-white/50 hover:text-white" :title="t('common.logout')" @click="logout">
             <LogOut class="size-4" />
           </button>
         </div>

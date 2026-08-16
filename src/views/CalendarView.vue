@@ -3,10 +3,12 @@ import { computed, ref } from 'vue'
 import { ChevronLeft, ChevronRight, CalendarOff } from 'lucide-vue-next'
 import PriorityBadge from '@/components/PriorityBadge.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
+import { useI18n } from '@/i18n'
 import { toISODate, isOverdue } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Task } from '@/types'
 
+const { t, tArray, locale } = useI18n()
 const workspace = useWorkspaceStore()
 
 const currentYear = ref(new Date().getFullYear())
@@ -14,11 +16,12 @@ const currentMonth = ref(new Date().getMonth())
 const transitionDir = ref<'left' | 'right'>('right')
 const gridKey = ref(0)
 
-const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+const WEEKDAYS = computed(() => tArray('calendar.weekdays'))
 
 const monthLabel = computed(() => {
   const d = new Date(currentYear.value, currentMonth.value, 1)
-  const txt = d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+  const intlLocale = locale.value === 'en' ? 'en-US' : 'es-ES'
+  const txt = d.toLocaleDateString(intlLocale, { month: 'long', year: 'numeric' })
   return txt.charAt(0).toUpperCase() + txt.slice(1)
 })
 
@@ -129,8 +132,8 @@ function getInitials(name?: string) {
     <!-- Header -->
     <div class="mb-5 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-semibold tracking-tight">Calendario</h1>
-        <p class="mt-1 text-sm text-muted">Visualiza tus tareas organizadas por fecha de vencimiento.</p>
+        <h1 class="text-3xl font-semibold tracking-tight">{{ t('calendar.title') }}</h1>
+        <p class="mt-1 text-sm text-muted">{{ t('calendar.subtitle') }}</p>
       </div>
       <TaskComposer @created="open" />
     </div>
@@ -140,14 +143,14 @@ function getInitials(name?: string) {
       <div class="flex items-center gap-1">
         <button
           class="grid size-8 cursor-pointer place-items-center rounded-lg border border-line bg-surface text-muted transition hover:bg-canvas hover:text-ink"
-          title="Mes anterior"
+          :title="t('calendar.prevMonth')"
           @click="prevMonth"
         >
           <ChevronLeft class="size-4" />
         </button>
         <button
           class="grid size-8 cursor-pointer place-items-center rounded-lg border border-line bg-surface text-muted transition hover:bg-canvas hover:text-ink"
-          title="Mes siguiente"
+          :title="t('calendar.nextMonth')"
           @click="nextMonth"
         >
           <ChevronRight class="size-4" />
@@ -161,12 +164,12 @@ function getInitials(name?: string) {
         class="ml-1 cursor-pointer rounded-lg border border-line bg-surface px-2.5 py-1 text-xs font-medium text-muted transition hover:bg-canvas hover:text-ink"
         @click="goToday"
       >
-        Hoy
+        {{ t('calendar.today') }}
       </button>
 
       <div class="ml-auto flex items-center gap-2 text-xs text-muted">
         <CalendarOff class="size-3.5" />
-        <span>{{ unscheduledCount }} sin fecha</span>
+        <span>{{ unscheduledCount }} {{ t('calendar.unscheduled') }}</span>
       </div>
     </div>
 
@@ -236,7 +239,7 @@ function getInitials(name?: string) {
                 <span
                   v-if="task.assignee"
                   class="flex size-4 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[8px] font-bold text-accent"
-                  :title="`Asignado a: ${task.assignee.fullName}`"
+                  :title="`${t('board.assignedTo')}: ${task.assignee.fullName}`"
                 >
                   {{ getInitials(task.assignee.fullName) }}
                 </span>
@@ -245,7 +248,7 @@ function getInitials(name?: string) {
                 v-if="cell.tasks.length > 4"
                 class="px-1.5 text-[10px] font-medium text-muted"
               >
-                +{{ cell.tasks.length - 4 }} más
+                +{{ cell.tasks.length - 4 }} {{ t('calendar.more') }}
               </p>
             </div>
           </div>

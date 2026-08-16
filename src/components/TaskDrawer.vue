@@ -2,11 +2,13 @@
 import { computed, ref, watch } from 'vue'
 import { Download, FileText, Grid2x2, Paperclip, Trash2, Upload, X } from 'lucide-vue-next'
 import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
+import { useI18n } from '@/i18n'
 import { formatDateTime } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { TaskPriority } from '@/types'
 import ActivityItem from '@/components/ActivityItem.vue'
 
+const { t } = useI18n()
 const workspace = useWorkspaceStore()
 const tab = ref<'comments' | 'attachments' | 'activity'>('comments')
 const draft = ref('')
@@ -96,7 +98,7 @@ async function onFileSelected(e: Event) {
 }
 
 async function deleteAttachment(id: string) {
-  if (!confirm('¿Eliminar este archivo adjunto?')) return
+  if (!confirm(t('drawer.confirmDeleteAttachment'))) return
   await workspace.deleteAttachment(id)
 }
 
@@ -108,7 +110,7 @@ function formatFileSize(bytes: number) {
 
 async function remove() {
   if (!task.value) return
-  if (!confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.')) return
+  if (!confirm(t('drawer.confirmDelete'))) return
   await workspace.deleteTask(task.value.id)
 }
 
@@ -129,7 +131,7 @@ function close() {
       >
         <header class="flex items-start justify-between gap-3 border-b border-line px-5 py-4">
           <div class="min-w-0 flex-1">
-            <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">Detalle</p>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">{{ t('drawer.detail') }}</p>
             <input
               v-model="title"
               class="mt-1 w-full bg-transparent text-xl font-semibold outline-none"
@@ -138,10 +140,10 @@ function close() {
             />
           </div>
           <div class="flex items-center gap-1">
-            <button class="icon-btn" title="Eliminar tarea" @click="remove">
+            <button class="icon-btn" :title="t('drawer.deleteTask')" @click="remove">
               <Trash2 class="size-4" />
             </button>
-            <button class="icon-btn" title="Cerrar" @click="close">
+            <button class="icon-btn" :title="t('common.close')" @click="close">
               <X class="size-4" />
             </button>
           </div>
@@ -152,7 +154,7 @@ function close() {
           <div class="flex items-center justify-between gap-2 mb-2">
             <span class="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
               <Grid2x2 class="size-3.5 text-accent" />
-              Matriz de Eisenhower
+              {{ t('eisenhower.title') }}
             </span>
             <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded border" :class="taskQuadrant.badgeClass">
               {{ taskQuadrant.name }}: {{ taskQuadrant.action }}
@@ -160,7 +162,7 @@ function close() {
           </div>
           <div class="grid grid-cols-2 gap-2 text-xs">
             <div class="flex items-center justify-between rounded-lg border border-line bg-surface p-1.5">
-              <span class="text-muted font-medium">Urgencia:</span>
+              <span class="text-muted font-medium">{{ t('drawer.urgency') }}</span>
               <div class="flex items-center gap-1">
                 <button
                   type="button"
@@ -168,7 +170,7 @@ function close() {
                   :class="task.isUrgent ? 'bg-rose-500/20 text-rose-600 font-bold' : 'text-muted hover:text-ink'"
                   @click="updateUrgency(true)"
                 >
-                  Sí
+                  {{ t('common.yes') }}
                 </button>
                 <button
                   type="button"
@@ -176,13 +178,13 @@ function close() {
                   :class="!task.isUrgent ? 'bg-canvas text-ink font-bold' : 'text-muted hover:text-ink'"
                   @click="updateUrgency(false)"
                 >
-                  No
+                  {{ t('common.no') }}
                 </button>
               </div>
             </div>
 
             <div class="flex items-center justify-between rounded-lg border border-line bg-surface p-1.5">
-              <span class="text-muted font-medium">Importancia:</span>
+              <span class="text-muted font-medium">{{ t('drawer.importance') }}</span>
               <div class="flex items-center gap-1">
                 <button
                   type="button"
@@ -190,7 +192,7 @@ function close() {
                   :class="task.isImportant ? 'bg-amber-500/20 text-amber-600 font-bold' : 'text-muted hover:text-ink'"
                   @click="updateImportance(true)"
                 >
-                  Sí
+                  {{ t('common.yes') }}
                 </button>
                 <button
                   type="button"
@@ -198,7 +200,7 @@ function close() {
                   :class="!task.isImportant ? 'bg-canvas text-ink font-bold' : 'text-muted hover:text-ink'"
                   @click="updateImportance(false)"
                 >
-                  No
+                  {{ t('common.no') }}
                 </button>
               </div>
             </div>
@@ -207,19 +209,19 @@ function close() {
 
         <div class="grid grid-cols-2 gap-3 border-b border-line px-5 py-4">
           <label class="field-label">
-            Estado
+            {{ t('drawer.status') }}
             <select :value="task.status" class="field" @change="persist({ status: ($event.target as HTMLSelectElement).value as typeof task.status })">
               <option v-for="status in STATUSES" :key="status.id" :value="status.id">{{ status.label }}</option>
             </select>
           </label>
           <label class="field-label">
-            Prioridad
+            {{ t('drawer.priority') }}
             <select :value="task.priority" class="field" @change="updatePriority(($event.target as HTMLSelectElement).value as TaskPriority)">
               <option v-for="priority in PRIORITIES" :key="priority.id" :value="priority.id">{{ priority.label }}</option>
             </select>
           </label>
           <label class="field-label">
-            Fecha de inicio
+            {{ t('drawer.startDate') }}
             <input
               :value="task.startDate ?? ''"
               type="date"
@@ -228,7 +230,7 @@ function close() {
             />
           </label>
           <label class="field-label">
-            Fecha de vencimiento
+            {{ t('drawer.dueDate') }}
             <input
               :value="task.dueDate ?? ''"
               type="date"
@@ -237,7 +239,7 @@ function close() {
             />
           </label>
           <label class="field-label">
-            Proyecto
+            {{ t('drawer.project') }}
             <select :value="task.projectId" class="field" @change="persist({ projectId: ($event.target as HTMLSelectElement).value })">
               <option v-for="project in workspace.projects" :key="project.id" :value="project.id">
                 {{ project.name }}
@@ -245,9 +247,9 @@ function close() {
             </select>
           </label>
           <label class="field-label">
-            Asignado a
+            {{ t('drawer.assignee') }}
             <select :value="task.assigneeId ?? ''" class="field" @change="persist({ assigneeId: ($event.target as HTMLSelectElement).value || null })">
-              <option value="">Sin asignar</option>
+              <option value="">{{ t('common.unassigned') }}</option>
               <option v-for="user in workspace.users" :key="user.id" :value="user.id">
                 {{ user.fullName }}
               </option>
@@ -257,17 +259,17 @@ function close() {
 
         <div class="flex-1 overflow-y-auto scrollbar-thin">
           <section class="px-5 py-4">
-            <p class="text-xs font-semibold uppercase tracking-wide text-muted">Descripción</p>
+            <p class="text-xs font-semibold uppercase tracking-wide text-muted">{{ t('drawer.description') }}</p>
             <textarea
               v-model="description"
               rows="4"
               class="mt-2 w-full resize-y rounded-xl border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-accent"
-              placeholder="Qué hay que hacer, contexto, criterios de cierre…"
+              :placeholder="t('drawer.descriptionPlaceholder')"
               @blur="saveDescription"
             />
             <p class="mt-2 text-[11px] text-muted">
-              Creada {{ formatDateTime(task.createdAt) }}
-              <span v-if="saving"> · Guardando…</span>
+              {{ t('drawer.created') }} {{ formatDateTime(task.createdAt) }}
+              <span v-if="saving"> · {{ t('drawer.savingInline') }}</span>
             </p>
           </section>
 
@@ -278,7 +280,7 @@ function close() {
                 :class="tab === 'comments' && 'tab-active'"
                 @click="tab = 'comments'"
               >
-                Comentarios ({{ workspace.comments.length }})
+                {{ t('drawer.comments') }} ({{ workspace.comments.length }})
               </button>
               <button
                 class="tab flex items-center gap-1.5"
@@ -286,14 +288,14 @@ function close() {
                 @click="tab = 'attachments'"
               >
                 <Paperclip class="size-3.5" />
-                Adjuntos ({{ workspace.attachments.length }})
+                {{ t('drawer.attachmentsTab') }} ({{ workspace.attachments.length }})
               </button>
               <button
                 class="tab"
                 :class="tab === 'activity' && 'tab-active'"
                 @click="tab = 'activity'"
               >
-                Actividad
+                {{ t('drawer.activityTab') }}
               </button>
             </div>
 
@@ -305,20 +307,20 @@ function close() {
                 class="rounded-xl bg-canvas px-3 py-2.5"
               >
                 <div class="flex items-baseline justify-between gap-3">
-                  <p class="text-sm font-medium">{{ comment.authorName || 'Tú' }}</p>
+                  <p class="text-sm font-medium">{{ comment.authorName || t('common.you') }}</p>
                   <p class="text-[11px] text-muted">{{ formatDateTime(comment.createdAt) }}</p>
                 </div>
                 <p class="mt-1 whitespace-pre-wrap text-sm text-ink/90">{{ comment.body }}</p>
               </article>
               <p v-if="!workspace.comments.length" class="text-sm text-muted">
-                Todavía no hay comentarios.
+                {{ t('drawer.noComments') }}
               </p>
               <form class="rounded-xl border border-line p-2" @submit.prevent="submitComment">
                 <textarea
                   v-model="draft"
                   rows="3"
                   class="w-full resize-none bg-transparent px-2 py-1 text-sm outline-none"
-                  placeholder="Escribe un comentario o una actualización…"
+                  :placeholder="t('drawer.commentPlaceholder')"
                 />
                 <div class="flex justify-end">
                   <button
@@ -326,7 +328,7 @@ function close() {
                     class="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-40"
                     :disabled="!draft.trim()"
                   >
-                    Publicar
+                    {{ t('drawer.publish') }}
                   </button>
                 </div>
               </form>
@@ -335,7 +337,7 @@ function close() {
             <!-- TAB ADJUNTOS -->
             <div v-else-if="tab === 'attachments'" class="mt-4 space-y-4">
               <div class="flex items-center justify-between">
-                <p class="text-xs font-semibold uppercase tracking-wide text-muted">Archivos adjuntos</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-muted">{{ t('drawer.attachmentsLabel') }}</p>
                 <input
                   ref="fileInputRef"
                   type="file"
@@ -350,7 +352,7 @@ function close() {
                   @click="triggerFileSelect"
                 >
                   <Upload class="size-3.5" />
-                  {{ uploading ? 'Subiendo…' : 'Agregar adjunto' }}
+                  {{ uploading ? t('drawer.uploading') : t('drawer.addAttachment') }}
                 </button>
               </div>
 
@@ -378,7 +380,7 @@ function close() {
                         class="inline-flex items-center gap-1 text-[11px] font-semibold text-accent hover:underline"
                       >
                         <Download class="size-3" />
-                        Abrir
+                        {{ t('drawer.open') }}
                       </a>
                     </div>
                   </div>
@@ -386,7 +388,7 @@ function close() {
                   <button
                     type="button"
                     class="rounded-md p-1 text-muted hover:bg-rose-500/10 hover:text-rose-600"
-                    title="Eliminar adjunto"
+                    :title="t('drawer.deleteAttachment')"
                     @click="deleteAttachment(item.id)"
                   >
                     <Trash2 class="size-3.5" />
@@ -399,15 +401,15 @@ function close() {
                 class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-line p-6 text-center"
               >
                 <Paperclip class="size-8 text-muted/60" />
-                <p class="mt-2 text-sm font-medium">Sin archivos adjuntos</p>
-                <p class="mt-1 text-xs text-muted">Sube documentos, capturas o imágenes relativas a esta tarea.</p>
+                <p class="mt-2 text-sm font-medium">{{ t('drawer.noAttachments') }}</p>
+                <p class="mt-1 text-xs text-muted">{{ t('drawer.noAttachmentsHint') }}</p>
                 <button
                   type="button"
                   class="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas"
                   @click="triggerFileSelect"
                 >
                   <Upload class="size-3.5" />
-                  Seleccionar archivo
+                  {{ t('drawer.selectFile') }}
                 </button>
               </div>
             </div>
@@ -416,7 +418,7 @@ function close() {
             <div v-else class="mt-4 space-y-4">
               <ActivityItem v-for="item in workspace.activities" :key="item.id" :item="item" />
               <p v-if="!workspace.activities.length" class="text-sm text-muted">
-                Sin actividad todavía.
+                {{ t('drawer.noActivity') }}
               </p>
             </div>
           </section>

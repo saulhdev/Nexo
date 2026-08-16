@@ -1,26 +1,36 @@
-const dateFmt = new Intl.DateTimeFormat('es-ES', {
-  day: 'numeric',
-  month: 'short',
-})
+import { t, intlLocale } from '@/i18n'
 
-const dateFullFmt = new Intl.DateTimeFormat('es-ES', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-})
+function getDateFmt() {
+  return new Intl.DateTimeFormat(intlLocale.value, {
+    day: 'numeric',
+    month: 'short',
+  })
+}
 
-const dateTimeFmt = new Intl.DateTimeFormat('es-ES', {
-  day: 'numeric',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
-})
+function getDateFullFmt() {
+  return new Intl.DateTimeFormat(intlLocale.value, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
 
-const weekdayFmt = new Intl.DateTimeFormat('es-ES', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-})
+function getDateTimeFmt() {
+  return new Intl.DateTimeFormat(intlLocale.value, {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+function getWeekdayFmt() {
+  return new Intl.DateTimeFormat(intlLocale.value, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  })
+}
 
 function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
@@ -52,20 +62,20 @@ export function addDaysISO(days: number, from = new Date()) {
 }
 
 export function formatDate(value: string | null | undefined) {
-  if (!value) return 'Sin fecha'
-  return dateFmt.format(parseDate(value))
+  if (!value) return t('dates.noDate')
+  return getDateFmt().format(parseDate(value))
 }
 
 export function formatDateFull(value: string) {
-  return dateFullFmt.format(parseDate(value))
+  return getDateFullFmt().format(parseDate(value))
 }
 
 export function formatDateTime(value: string) {
-  return dateTimeFmt.format(new Date(value))
+  return getDateTimeFmt().format(new Date(value))
 }
 
 export function formatGreetingDate() {
-  const text = weekdayFmt.format(new Date())
+  const text = getWeekdayFmt().format(new Date())
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
@@ -76,13 +86,13 @@ export function daysFromToday(value: string) {
 }
 
 export function dueLabel(value: string | null | undefined) {
-  if (!value) return 'Sin fecha'
+  if (!value) return t('dates.noDate')
   const diff = daysFromToday(value)
-  if (diff === 0) return 'Hoy'
-  if (diff === 1) return 'Mañana'
-  if (diff === -1) return 'Ayer'
-  if (diff < 0) return `Vencida · ${formatDate(value)}`
-  if (diff <= 7) return `En ${diff} días`
+  if (diff === 0) return t('dates.today')
+  if (diff === 1) return t('dates.tomorrow')
+  if (diff === -1) return t('dates.yesterday')
+  if (diff < 0) return `${t('dates.overdue')} · ${formatDate(value)}`
+  if (diff <= 7) return t('dates.inDays', { n: diff })
   return formatDate(value)
 }
 
@@ -90,9 +100,9 @@ export function formatDateRange(startDate: string | null | undefined, dueDate: s
   if (startDate && dueDate) {
     return `${formatDate(startDate)} – ${formatDate(dueDate)}`
   }
-  if (startDate) return `Inicio: ${formatDate(startDate)}`
-  if (dueDate) return `Vence: ${formatDate(dueDate)}`
-  return 'Sin fecha'
+  if (startDate) return `${t('dates.start')}: ${formatDate(startDate)}`
+  if (dueDate) return `${t('dates.due')}: ${formatDate(dueDate)}`
+  return t('dates.noDate')
 }
 
 export function isOverdue(value: string | null | undefined, status?: string) {

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { reactive, ref, watchEffect } from 'vue'
 import { CheckCircle2, KeyRound, Mail, User as UserIcon } from 'lucide-vue-next'
+import { useI18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 
+const { t } = useI18n()
 const auth = useAuthStore()
 
 const profileForm = reactive({
@@ -28,7 +30,7 @@ async function saveProfile() {
   profileSuccess.value = ''
   try {
     await auth.updateProfile({ fullName: profileForm.fullName })
-    profileSuccess.value = 'Nombre actualizado correctamente'
+    profileSuccess.value = t('profile.nameUpdated')
     setTimeout(() => {
       profileSuccess.value = ''
     }, 4000)
@@ -42,12 +44,12 @@ async function savePassword() {
   securityError.value = ''
 
   if (securityForm.password.length < 6) {
-    securityError.value = 'La contraseña debe tener al menos 6 caracteres'
+    securityError.value = t('profile.passwordTooShort')
     return
   }
 
   if (securityForm.password !== securityForm.confirmPassword) {
-    securityError.value = 'Las contraseñas no coinciden'
+    securityError.value = t('profile.passwordMismatch')
     return
   }
 
@@ -55,13 +57,13 @@ async function savePassword() {
     await auth.updateProfile({ password: securityForm.password })
     securityForm.password = ''
     securityForm.confirmPassword = ''
-    securitySuccess.value = 'Contraseña actualizada con éxito'
+    securitySuccess.value = t('profile.passwordUpdated')
     setTimeout(() => {
       securitySuccess.value = ''
     }, 4000)
   } catch (err) {
     const msg = err instanceof Error ? err.message : (err as { message?: string })?.message
-    securityError.value = msg || 'Error al actualizar contraseña'
+    securityError.value = msg || t('profile.passwordError')
   }
 }
 </script>
@@ -69,8 +71,8 @@ async function savePassword() {
 <template>
   <div class="mx-auto max-w-3xl space-y-6">
     <div>
-      <h1 class="text-3xl font-semibold tracking-tight">Mi Perfil</h1>
-      <p class="mt-1 text-sm text-muted">Gestiona la información de tu cuenta y preferencias de seguridad.</p>
+      <h1 class="text-3xl font-semibold tracking-tight">{{ t('profile.title') }}</h1>
+      <p class="mt-1 text-sm text-muted">{{ t('profile.subtitle') }}</p>
     </div>
 
     <!-- Información General -->
@@ -80,14 +82,14 @@ async function savePassword() {
           <UserIcon class="size-5" />
         </div>
         <div>
-          <h2 class="text-base font-semibold">Información del Usuario</h2>
-          <p class="text-xs text-muted">Datos de tu cuenta de trabajo</p>
+          <h2 class="text-base font-semibold">{{ t('profile.userInfo') }}</h2>
+          <p class="text-xs text-muted">{{ t('profile.userInfoHint') }}</p>
         </div>
       </div>
 
       <form class="mt-6 space-y-4" @submit.prevent="saveProfile">
         <div>
-          <label class="mb-1.5 block text-xs font-semibold text-muted">Correo electrónico</label>
+          <label class="mb-1.5 block text-xs font-semibold text-muted">{{ t('profile.email') }}</label>
           <div class="relative">
             <input
               :value="auth.user?.email"
@@ -96,15 +98,15 @@ async function savePassword() {
             />
             <Mail class="absolute left-3 top-3 size-4 text-muted" />
           </div>
-          <p class="mt-1 text-[11px] text-muted">El correo está vinvulado a la autenticación de Supabase.</p>
+          <p class="mt-1 text-[11px] text-muted">{{ t('profile.emailHint') }}</p>
         </div>
 
         <div>
-          <label class="mb-1.5 block text-xs font-semibold text-muted">Nombre completo</label>
+          <label class="mb-1.5 block text-xs font-semibold text-muted">{{ t('profile.fullName') }}</label>
           <input
             v-model="profileForm.fullName"
             required
-            placeholder="Tu nombre y apellidos"
+            :placeholder="t('profile.fullNamePlaceholder')"
             class="w-full rounded-xl border border-line bg-canvas px-3 py-2.5 text-sm outline-none focus:border-accent"
           />
         </div>
@@ -120,7 +122,7 @@ async function savePassword() {
             class="rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
             :disabled="auth.loading || !profileForm.fullName.trim()"
           >
-            {{ auth.loading ? 'Guardando…' : 'Guardar cambios' }}
+            {{ auth.loading ? t('common.saving') : t('common.save') }}
           </button>
         </div>
       </form>
@@ -133,32 +135,32 @@ async function savePassword() {
           <KeyRound class="size-5" />
         </div>
         <div>
-          <h2 class="text-base font-semibold">Cambiar Contraseña</h2>
-          <p class="text-xs text-muted">Actualiza la credencial de acceso a tu cuenta</p>
+          <h2 class="text-base font-semibold">{{ t('profile.changePassword') }}</h2>
+          <p class="text-xs text-muted">{{ t('profile.changePasswordHint') }}</p>
         </div>
       </div>
 
       <form class="mt-6 space-y-4" @submit.prevent="savePassword">
         <div>
-          <label class="mb-1.5 block text-xs font-semibold text-muted">Nueva contraseña</label>
+          <label class="mb-1.5 block text-xs font-semibold text-muted">{{ t('profile.newPassword') }}</label>
           <input
             v-model="securityForm.password"
             type="password"
             required
             minlength="6"
-            placeholder="Mínimo 6 caracteres"
+            :placeholder="t('profile.newPasswordPlaceholder')"
             class="w-full rounded-xl border border-line bg-canvas px-3 py-2.5 text-sm outline-none focus:border-accent"
           />
         </div>
 
         <div>
-          <label class="mb-1.5 block text-xs font-semibold text-muted">Confirmar contraseña</label>
+          <label class="mb-1.5 block text-xs font-semibold text-muted">{{ t('profile.confirmPassword') }}</label>
           <input
             v-model="securityForm.confirmPassword"
             type="password"
             required
             minlength="6"
-            placeholder="Repite la nueva contraseña"
+            :placeholder="t('profile.confirmPasswordPlaceholder')"
             class="w-full rounded-xl border border-line bg-canvas px-3 py-2.5 text-sm outline-none focus:border-accent"
           />
         </div>
@@ -176,7 +178,7 @@ async function savePassword() {
             class="rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
             :disabled="auth.loading || !securityForm.password"
           >
-            {{ auth.loading ? 'Actualizando…' : 'Actualizar contraseña' }}
+            {{ auth.loading ? t('profile.updating') : t('profile.updatePassword') }}
           </button>
         </div>
       </form>

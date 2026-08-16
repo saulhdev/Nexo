@@ -2,8 +2,11 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { Calendar, ChevronDown, FileText, Flag, Folder, Grid2x2, ListTodo, Paperclip, UserCheck, X } from 'lucide-vue-next'
 import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
+import { useI18n } from '@/i18n'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Task, TaskPriority, TaskStatus } from '@/types'
+
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{
@@ -238,7 +241,7 @@ defineExpose({ start, editTask })
       class="inline-flex items-center gap-2 rounded-xl bg-accent px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-dark cursor-pointer"
       @click="start()"
     >
-      Nueva tarea
+      {{ t('composer.newTask') }}
     </button>
 
     <Teleport to="body">
@@ -250,9 +253,9 @@ defineExpose({ start, editTask })
           <div class="w-full max-w-3xl rounded-2xl border border-line bg-surface p-6 shadow-2xl">
             <header class="flex items-center justify-between border-b border-line pb-4">
               <div>
-                <h2 class="text-xl font-semibold text-ink">{{ isEditing ? 'Editar tarea' : 'Nueva tarea' }}</h2>
+                <h2 class="text-xl font-semibold text-ink">{{ isEditing ? t('composer.editTitle') : t('composer.createTitle') }}</h2>
                 <p class="text-xs text-muted">
-                  {{ isEditing ? 'Modifica los detalles de la tarea.' : 'Crea y organiza una nueva tarea en tu espacio de trabajo.' }}
+                  {{ isEditing ? t('composer.editSubtitle') : t('composer.createSubtitle') }}
                 </p>
               </div>
               <button
@@ -266,35 +269,35 @@ defineExpose({ start, editTask })
 
             <form class="mt-5 space-y-5" @submit.prevent="submit">
               <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-muted">Nombre de la tarea</label>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.taskName') }}</label>
                 <input
                   v-model="form.title"
                   autofocus
                   class="mt-1.5 w-full rounded-xl border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink outline-none focus:border-accent transition"
-                  placeholder="Ej: Diseñar flujo de autenticación y permisos"
+                  :placeholder="t('composer.taskNamePlaceholder')"
                 />
               </div>
 
               <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-muted">Descripción</label>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.description') }}</label>
                 <textarea
                   v-model="form.description"
                   rows="3"
                   class="mt-1.5 w-full resize-none rounded-xl border border-line bg-canvas px-4 py-2.5 text-sm text-ink outline-none focus:border-accent transition"
-                  placeholder="Qué hay que hacer, contexto, criterios de cierre…"
+                  :placeholder="t('composer.descriptionPlaceholder')"
                 />
               </div>
 
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
-                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">Proyecto</label>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.project') }}</label>
                   <div class="relative mt-1.5">
                     <Folder class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
                     <select
                       v-model="form.projectId"
                       class="field-input pl-10 pr-9"
                     >
-                      <option disabled value="">Seleccionar proyecto</option>
+                      <option disabled value="">{{ t('composer.selectProject') }}</option>
                       <option v-for="project in workspace.projects" :key="project.id" :value="project.id">
                         {{ project.name }}
                       </option>
@@ -304,14 +307,14 @@ defineExpose({ start, editTask })
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">Asignado a</label>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.assignee') }}</label>
                   <div class="relative mt-1.5">
                     <UserCheck class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
                     <select
                       v-model="form.assigneeId"
                       class="field-input pl-10 pr-9"
                     >
-                      <option value="">Sin asignar</option>
+                      <option value="">{{ t('common.unassigned') }}</option>
                       <option v-for="user in workspace.users" :key="user.id" :value="user.id">
                         {{ user.fullName }}
                       </option>
@@ -321,7 +324,7 @@ defineExpose({ start, editTask })
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">Estado</label>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.status') }}</label>
                   <div class="relative mt-1.5">
                     <ListTodo class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
                     <select
@@ -339,7 +342,7 @@ defineExpose({ start, editTask })
 
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">Fecha de inicio</label>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.startDate') }}</label>
                   <div class="relative mt-1.5">
                     <Calendar class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
                     <input
@@ -351,7 +354,7 @@ defineExpose({ start, editTask })
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">Fecha de vencimiento</label>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.dueDate') }}</label>
                   <div class="relative mt-1.5">
                     <Calendar class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
                     <input
@@ -368,7 +371,7 @@ defineExpose({ start, editTask })
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                   <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted">
                     <Grid2x2 class="size-4 text-accent" />
-                    <span>Matriz de Eisenhower</span>
+                    <span>{{ t('eisenhower.title') }}</span>
                   </div>
                   <span
                     class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium"
@@ -381,7 +384,7 @@ defineExpose({ start, editTask })
 
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div>
-                    <label class="block text-[11px] font-semibold text-muted mb-1">Urgencia</label>
+                    <label class="block text-[11px] font-semibold text-muted mb-1">{{ t('eisenhower.urgency') }}</label>
                     <div class="grid grid-cols-2 gap-1 rounded-lg border border-line bg-surface p-1">
                       <button
                         type="button"
@@ -389,7 +392,7 @@ defineExpose({ start, editTask })
                         :class="form.isUrgent ? 'bg-rose-500/15 text-rose-600 font-semibold' : 'text-muted hover:text-ink'"
                         @click="setUrgent(true)"
                       >
-                        ⚡ Urgente
+                        {{ t('eisenhower.urgent') }}
                       </button>
                       <button
                         type="button"
@@ -397,13 +400,13 @@ defineExpose({ start, editTask })
                         :class="!form.isUrgent ? 'bg-canvas text-ink font-semibold' : 'text-muted hover:text-ink'"
                         @click="setUrgent(false)"
                       >
-                        ⏳ No urgente
+                        {{ t('eisenhower.notUrgent') }}
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <label class="block text-[11px] font-semibold text-muted mb-1">Importancia</label>
+                    <label class="block text-[11px] font-semibold text-muted mb-1">{{ t('eisenhower.importance') }}</label>
                     <div class="grid grid-cols-2 gap-1 rounded-lg border border-line bg-surface p-1">
                       <button
                         type="button"
@@ -411,7 +414,7 @@ defineExpose({ start, editTask })
                         :class="form.isImportant ? 'bg-amber-500/15 text-amber-600 font-semibold' : 'text-muted hover:text-ink'"
                         @click="setImportant(true)"
                       >
-                        ⭐ Importante
+                        {{ t('eisenhower.important') }}
                       </button>
                       <button
                         type="button"
@@ -419,13 +422,13 @@ defineExpose({ start, editTask })
                         :class="!form.isImportant ? 'bg-canvas text-ink font-semibold' : 'text-muted hover:text-ink'"
                         @click="setImportant(false)"
                       >
-                        ⚪ No importante
+                        {{ t('eisenhower.notImportant') }}
                       </button>
                     </div>
                   </div>
 
                   <div>
-                    <label class="block text-[11px] font-semibold text-muted mb-1">Prioridad Asignada</label>
+                    <label class="block text-[11px] font-semibold text-muted mb-1">{{ t('eisenhower.assignedPriority') }}</label>
                     <div class="relative">
                       <Flag class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted" />
                       <select
@@ -446,7 +449,7 @@ defineExpose({ start, editTask })
               <!-- SECCIÓN ARCHIVOS ADJUNTOS -->
               <div>
                 <div class="flex items-center justify-between">
-                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">Archivos adjuntos</label>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.attachments') }}</label>
                   <input
                     ref="fileInputRef"
                     type="file"
@@ -460,7 +463,7 @@ defineExpose({ start, editTask })
                     @click="triggerFileSelect"
                   >
                     <Paperclip class="size-3.5" />
-                    Adjuntar archivos
+                    {{ t('composer.attachFiles') }}
                   </button>
                 </div>
 
@@ -483,7 +486,7 @@ defineExpose({ start, editTask })
                     <button
                       type="button"
                       class="rounded-md p-1 text-muted hover:bg-rose-500/10 hover:text-rose-600 cursor-pointer"
-                      title="Quitar archivo"
+                      :title="t('composer.removeFile')"
                       @click="removePendingFile(idx)"
                     >
                       <X class="size-3.5" />
@@ -493,9 +496,9 @@ defineExpose({ start, editTask })
               </div>
 
               <div class="mt-6 flex justify-end gap-3 border-t border-line pt-4">
-                <button type="button" class="ghost cursor-pointer" @click="cancel">Cancelar</button>
+                <button type="button" class="ghost cursor-pointer" @click="cancel">{{ t('common.cancel') }}</button>
                 <button type="submit" class="primary cursor-pointer" :disabled="!canSubmit || submitting">
-                  {{ submitting ? (pendingFiles.length ? 'Subiendo archivos…' : (isEditing ? 'Guardando…' : 'Creando…')) : (isEditing ? 'Guardar cambios' : 'Crear tarea') }}
+                  {{ submitting ? (pendingFiles.length ? t('composer.uploadingFiles') : (isEditing ? t('composer.savingEdit') : t('composer.creatingTask'))) : (isEditing ? t('composer.saveEdit') : t('composer.createTask')) }}
                 </button>
               </div>
             </form>

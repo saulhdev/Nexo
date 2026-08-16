@@ -1,29 +1,45 @@
+import { t } from '@/i18n'
 import type { TaskPriority, TaskStatus } from '@/types'
 
 export const APP_NAME = 'Nexo'
 
-export const STATUSES: {
+export interface StatusDef {
   id: TaskStatus
-  label: string
-  hint: string
+  labelKey: string
+  hintKey: string
   tone: string
-}[] = [
-  { id: 'todo', label: 'Por hacer', hint: 'Aún no empezó', tone: 'stone' },
-  { id: 'in_progress', label: 'En progreso', hint: 'Se está trabajando', tone: 'sky' },
-  { id: 'in_review', label: 'En revisión', hint: 'Pendiente de validar', tone: 'amber' },
-  { id: 'done', label: 'Hecho', hint: 'Cerrada', tone: 'emerald' },
+}
+
+const STATUS_DEFS: StatusDef[] = [
+  { id: 'todo', labelKey: 'status.todo', hintKey: 'status.todo.hint', tone: 'stone' },
+  { id: 'in_progress', labelKey: 'status.in_progress', hintKey: 'status.in_progress.hint', tone: 'sky' },
+  { id: 'in_review', labelKey: 'status.in_review', hintKey: 'status.in_review.hint', tone: 'amber' },
+  { id: 'done', labelKey: 'status.done', hintKey: 'status.done.hint', tone: 'emerald' },
 ]
 
-export const PRIORITIES: {
+export interface PriorityDef {
   id: TaskPriority
-  label: string
+  labelKey: string
   tone: string
-}[] = [
-  { id: 'low', label: 'Baja', tone: 'stone' },
-  { id: 'medium', label: 'Media', tone: 'sky' },
-  { id: 'high', label: 'Alta', tone: 'orange' },
-  { id: 'urgent', label: 'Urgente', tone: 'rose' },
+}
+
+const PRIORITY_DEFS: PriorityDef[] = [
+  { id: 'low', labelKey: 'priority.low', tone: 'stone' },
+  { id: 'medium', labelKey: 'priority.medium', tone: 'sky' },
+  { id: 'high', labelKey: 'priority.high', tone: 'orange' },
+  { id: 'urgent', labelKey: 'priority.urgent', tone: 'rose' },
 ]
+
+export const STATUSES = STATUS_DEFS.map((s) => ({
+  ...s,
+  get label() { return t(s.labelKey) },
+  get hint() { return t(s.hintKey) },
+}))
+
+export const PRIORITIES = PRIORITY_DEFS.map((p) => ({
+  ...p,
+  get label() { return t(p.labelKey) },
+}))
 
 export const PROJECT_COLORS = [
   '#C45C26',
@@ -36,13 +52,29 @@ export const PROJECT_COLORS = [
   '#334155',
 ]
 
-export const STATUS_LABEL: Record<TaskStatus, string> = Object.fromEntries(
-  STATUSES.map((s) => [s.id, s.label]),
-) as Record<TaskStatus, string>
+export function statusLabel(id: TaskStatus): string {
+  const s = STATUSES.find((s) => s.id === id)
+  return s ? s.label : id
+}
 
-export const PRIORITY_LABEL: Record<TaskPriority, string> = Object.fromEntries(
-  PRIORITIES.map((p) => [p.id, p.label]),
-) as Record<TaskPriority, string>
+export function priorityLabel(id: TaskPriority): string {
+  const p = PRIORITIES.find((p) => p.id === id)
+  return p ? p.label : id
+}
+
+/** @deprecated Use statusLabel() instead — kept for backwards compat during migration */
+export const STATUS_LABEL = new Proxy({} as Record<TaskStatus, string>, {
+  get(_target, prop: string) {
+    return statusLabel(prop as TaskStatus)
+  },
+})
+
+/** @deprecated Use priorityLabel() instead — kept for backwards compat during migration */
+export const PRIORITY_LABEL = new Proxy({} as Record<TaskPriority, string>, {
+  get(_target, prop: string) {
+    return priorityLabel(prop as TaskPriority)
+  },
+})
 
 export function statusMeta(id: TaskStatus) {
   return STATUSES.find((s) => s.id === id) ?? STATUSES[0]
@@ -56,9 +88,9 @@ export type EisenhowerQuadrantId = 'q1' | 'q2' | 'q3' | 'q4'
 
 export interface EisenhowerQuadrant {
   id: EisenhowerQuadrantId
-  name: string
-  action: string
-  description: string
+  nameKey: string
+  actionKey: string
+  descriptionKey: string
   isUrgent: boolean
   isImportant: boolean
   priority: TaskPriority
@@ -68,14 +100,17 @@ export interface EisenhowerQuadrant {
   textClass: string
   badgeClass: string
   headerBg: string
+  get name(): string
+  get action(): string
+  get description(): string
 }
 
 export const EISENHOWER_QUADRANTS: EisenhowerQuadrant[] = [
   {
     id: 'q1',
-    name: 'Cuadrante 1',
-    action: 'Hacer ya',
-    description: 'Urgente e Importante — Fechas límite inminentes y tareas críticas',
+    nameKey: 'eisenhower.q1.name',
+    actionKey: 'eisenhower.q1.action',
+    descriptionKey: 'eisenhower.q1.description',
     isUrgent: true,
     isImportant: true,
     priority: 'urgent',
@@ -85,12 +120,15 @@ export const EISENHOWER_QUADRANTS: EisenhowerQuadrant[] = [
     textClass: 'text-rose-600',
     badgeClass: 'bg-rose-500/10 text-rose-600 border-rose-500/20',
     headerBg: 'bg-rose-500/10 text-rose-700',
+    get name() { return t(this.nameKey) },
+    get action() { return t(this.actionKey) },
+    get description() { return t(this.descriptionKey) },
   },
   {
     id: 'q2',
-    name: 'Cuadrante 2',
-    action: 'Planificar',
-    description: 'No urgente pero Importante — Objetivos estratégicos y desarrollo',
+    nameKey: 'eisenhower.q2.name',
+    actionKey: 'eisenhower.q2.action',
+    descriptionKey: 'eisenhower.q2.description',
     isUrgent: false,
     isImportant: true,
     priority: 'high',
@@ -100,12 +138,15 @@ export const EISENHOWER_QUADRANTS: EisenhowerQuadrant[] = [
     textClass: 'text-amber-600',
     badgeClass: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
     headerBg: 'bg-amber-500/10 text-amber-700',
+    get name() { return t(this.nameKey) },
+    get action() { return t(this.actionKey) },
+    get description() { return t(this.descriptionKey) },
   },
   {
     id: 'q3',
-    name: 'Cuadrante 3',
-    action: 'Delegar',
-    description: 'Urgente pero No importante — Interrupciones y peticiones rápidas',
+    nameKey: 'eisenhower.q3.name',
+    actionKey: 'eisenhower.q3.action',
+    descriptionKey: 'eisenhower.q3.description',
     isUrgent: true,
     isImportant: false,
     priority: 'medium',
@@ -115,12 +156,15 @@ export const EISENHOWER_QUADRANTS: EisenhowerQuadrant[] = [
     textClass: 'text-sky-600',
     badgeClass: 'bg-sky-500/10 text-sky-600 border-sky-500/20',
     headerBg: 'bg-sky-500/10 text-sky-700',
+    get name() { return t(this.nameKey) },
+    get action() { return t(this.actionKey) },
+    get description() { return t(this.descriptionKey) },
   },
   {
     id: 'q4',
-    name: 'Cuadrante 4',
-    action: 'Eliminar',
-    description: 'No urgente y No importante — Distracciones y baja prioridad',
+    nameKey: 'eisenhower.q4.name',
+    actionKey: 'eisenhower.q4.action',
+    descriptionKey: 'eisenhower.q4.description',
     isUrgent: false,
     isImportant: false,
     priority: 'low',
@@ -130,6 +174,9 @@ export const EISENHOWER_QUADRANTS: EisenhowerQuadrant[] = [
     textClass: 'text-stone-600',
     badgeClass: 'bg-stone-500/10 text-stone-600 border-stone-500/20',
     headerBg: 'bg-stone-500/10 text-stone-700',
+    get name() { return t(this.nameKey) },
+    get action() { return t(this.actionKey) },
+    get description() { return t(this.descriptionKey) },
   },
 ]
 
@@ -163,4 +210,3 @@ export function getQuadrantFromTask(task: { isUrgent?: boolean | null; isImporta
   if (isUrgent && !isImportant) return EISENHOWER_QUADRANTS[2]
   return EISENHOWER_QUADRANTS[3]
 }
-

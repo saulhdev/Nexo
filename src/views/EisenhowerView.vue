@@ -6,10 +6,12 @@ import PriorityBadge from '@/components/PriorityBadge.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
 import { EISENHOWER_QUADRANTS, type EisenhowerQuadrant, getQuadrantFromTask } from '@/constants'
+import { useI18n } from '@/i18n'
 import { formatDateRange, isOverdue } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Task, TaskStatus } from '@/types'
 
+const { t } = useI18n()
 const workspace = useWorkspaceStore()
 const composerQuadrant = ref<EisenhowerQuadrant | null>(null)
 const composerRef = ref<InstanceType<typeof TaskComposer> | null>(null)
@@ -59,9 +61,9 @@ function getInitials(name?: string) {
     <!-- CABECERA -->
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-semibold tracking-tight">Matriz de Eisenhower</h1>
+        <h1 class="text-3xl font-semibold tracking-tight">{{ t('eisenhower.title') }}</h1>
         <p class="mt-1 text-sm text-muted">
-          Clasifica tus tareas según su Urgencia e Importancia para tomar decisiones de alta efectividad.
+          {{ t('eisenhower.subtitle') }}
         </p>
       </div>
       <div class="flex items-center gap-3">
@@ -76,7 +78,7 @@ function getInitials(name?: string) {
         <input
           :value="workspace.filters.search"
           type="text"
-          placeholder="Buscar tareas en la matriz…"
+          :placeholder="t('eisenhower.searchPlaceholder')"
           class="w-full rounded-xl border border-line bg-canvas pl-9 pr-3 py-1.5 text-sm text-ink outline-none focus:border-accent"
           @input="workspace.setFilter('search', ($event.target as HTMLInputElement).value)"
         />
@@ -88,7 +90,7 @@ function getInitials(name?: string) {
           class="rounded-xl border border-line bg-canvas px-3 py-1.5 text-xs font-medium text-ink outline-none"
           @change="workspace.setFilter('projectId', ($event.target as HTMLSelectElement).value)"
         >
-          <option value="all">Todos los proyectos</option>
+          <option value="all">{{ t('list.allProjects') }}</option>
           <option v-for="p in workspace.projects" :key="p.id" :value="p.id">{{ p.name }}</option>
         </select>
 
@@ -97,11 +99,11 @@ function getInitials(name?: string) {
           class="rounded-xl border border-line bg-canvas px-3 py-1.5 text-xs font-medium text-ink outline-none"
           @change="workspace.setFilter('status', ($event.target as HTMLSelectElement).value as TaskStatus | 'all')"
         >
-          <option value="all">Todos los estados</option>
-          <option value="todo">Por hacer</option>
-          <option value="in_progress">En progreso</option>
-          <option value="in_review">En revisión</option>
-          <option value="done">Hecho</option>
+          <option value="all">{{ t('list.allStatuses') }}</option>
+          <option value="todo">{{ t('status.todo') }}</option>
+          <option value="in_progress">{{ t('status.in_progress') }}</option>
+          <option value="in_review">{{ t('status.in_review') }}</option>
+          <option value="done">{{ t('status.done') }}</option>
         </select>
       </div>
     </div>
@@ -132,7 +134,7 @@ function getInitials(name?: string) {
             <button
               type="button"
               class="rounded-lg p-1.5 text-ink/70 hover:bg-surface hover:text-ink cursor-pointer"
-              :title="`Nueva tarea en ${quadrant.name}`"
+              :title="`${t('eisenhower.newTaskIn')} ${quadrant.name}`"
               @click="composerQuadrant = quadrant"
             >
               <Plus class="size-4" />
@@ -183,7 +185,7 @@ function getInitials(name?: string) {
                   <button
                     type="button"
                     class="opacity-0 group-hover:opacity-100 rounded-md p-1 text-muted hover:bg-canvas hover:text-accent transition cursor-pointer"
-                    title="Editar tarea"
+                    :title="t('board.editTask')"
                     @click="editTask(element, $event)"
                   >
                     <Pencil class="size-3.5" />
@@ -215,7 +217,7 @@ function getInitials(name?: string) {
                   <span
                     v-if="element.assignee"
                     class="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[10px] font-bold text-accent"
-                    :title="`Asignado a: ${element.assignee.fullName}`"
+                    :title="`${t('board.assignedTo')}: ${element.assignee.fullName}`"
                   >
                     {{ getInitials(element.assignee.fullName) }}
                   </span>
@@ -226,7 +228,7 @@ function getInitials(name?: string) {
         </draggable>
 
         <div v-if="!quadrantTasks(quadrant).length" class="p-6 text-center text-xs text-muted/70">
-          No hay tareas en este cuadrante. Arrastra una tarjeta aquí o haz clic en + para crear una.
+          {{ t('eisenhower.emptyQuadrant') }}
         </div>
       </section>
     </div>

@@ -7,29 +7,31 @@ import PriorityBadge from '@/components/PriorityBadge.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
 import { PRIORITIES } from '@/constants'
+import { useI18n } from '@/i18n'
 import { formatDateRange, formatGreetingDate, isOverdue } from '@/lib/dates'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
 
+const { t } = useI18n()
 const router = useRouter()
 const auth = useAuthStore()
 const workspace = useWorkspaceStore()
 
-const firstName = computed(() => auth.user?.fullName.split(' ')[0] ?? 'hola')
+const firstName = computed(() => auth.user?.fullName.split(' ')[0] ?? t('dashboard.greeting').toLowerCase())
 const maxPriority = computed(() => Math.max(1, ...Object.values(workspace.stats.byPriority)))
 const statusCounts = computed(() => [
-  { id: 'todo', label: 'Por hacer', value: workspace.stats.todo },
-  { id: 'in_progress', label: 'En progreso', value: workspace.stats.inProgress },
-  { id: 'in_review', label: 'En revisión', value: workspace.stats.inReview },
-  { id: 'done', label: 'Hecho', value: workspace.stats.done },
+  { id: 'todo', label: t('status.todo'), value: workspace.stats.todo },
+  { id: 'in_progress', label: t('status.in_progress'), value: workspace.stats.inProgress },
+  { id: 'in_review', label: t('status.in_review'), value: workspace.stats.inReview },
+  { id: 'done', label: t('status.done'), value: workspace.stats.done },
 ])
 const maxStatus = computed(() => Math.max(1, ...statusCounts.value.map((item) => item.value)))
 
 const cards = computed(() => [
-  { label: 'Tareas abiertas', value: workspace.stats.total - workspace.stats.done, hint: `${workspace.stats.total} en total`, icon: ListTodo },
-  { label: 'En movimiento', value: workspace.stats.inProgress + workspace.stats.inReview, hint: 'Progreso + revisión', icon: Clock3 },
-  { label: 'Vencidas', value: workspace.stats.overdue, hint: 'Requieren atención', icon: AlertTriangle, warn: workspace.stats.overdue > 0 },
-  { label: 'Hechas esta semana', value: workspace.stats.doneThisWeek, hint: 'Cierres desde el lunes', icon: CheckCircle2 },
+  { label: t('dashboard.openTasks'), value: workspace.stats.total - workspace.stats.done, hint: `${workspace.stats.total} ${t('dashboard.totalSuffix')}`, icon: ListTodo },
+  { label: t('dashboard.inMotion'), value: workspace.stats.inProgress + workspace.stats.inReview, hint: t('dashboard.inMotionHint'), icon: Clock3 },
+  { label: t('dashboard.overdue'), value: workspace.stats.overdue, hint: t('dashboard.overdueHint'), icon: AlertTriangle, warn: workspace.stats.overdue > 0 },
+  { label: t('dashboard.doneThisWeek'), value: workspace.stats.doneThisWeek, hint: t('dashboard.doneThisWeekHint'), icon: CheckCircle2 },
 ])
 
 function openTask(id: string) {
@@ -47,10 +49,10 @@ function goList(status?: string) {
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
         <p class="text-sm text-muted">{{ formatGreetingDate() }}</p>
-        <h1 class="mt-1 text-3xl font-semibold tracking-tight">Hola, {{ firstName }}</h1>
+        <h1 class="mt-1 text-3xl font-semibold tracking-tight">{{ t('dashboard.greeting') }}, {{ firstName }}</h1>
         <p class="mt-1 text-sm text-muted">
-          {{ workspace.stats.overdue ? `${workspace.stats.overdue} vencidas · ` : '' }}
-          {{ workspace.stats.dueSoon }} con fecha esta semana
+          {{ workspace.stats.overdue ? `${workspace.stats.overdue} ${t('dashboard.overdueSuffix')} · ` : '' }}
+          {{ workspace.stats.dueSoon }} {{ t('dashboard.dueSoonSuffix') }}
         </p>
       </div>
       <TaskComposer @created="openTask" />
@@ -75,9 +77,9 @@ function goList(status?: string) {
     <div class="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
       <section class="rounded-2xl border border-line bg-surface p-5 shadow-sm">
         <div class="flex items-center justify-between">
-          <h2 class="text-sm font-semibold">Distribución</h2>
+          <h2 class="text-sm font-semibold">{{ t('dashboard.distribution') }}</h2>
           <button class="text-xs font-medium text-accent" @click="router.push({ name: 'board' })">
-            Ver tablero
+            {{ t('dashboard.viewBoard') }}
           </button>
         </div>
         <div class="mt-4 space-y-3">
@@ -120,7 +122,7 @@ function goList(status?: string) {
       </section>
 
       <section class="rounded-2xl border border-line bg-surface p-5 shadow-sm">
-        <h2 class="text-sm font-semibold">Próximas fechas</h2>
+        <h2 class="text-sm font-semibold">{{ t('dashboard.upcomingDates') }}</h2>
         <div v-if="workspace.upcoming.length" class="mt-3 space-y-2">
           <button
             v-for="task in workspace.upcoming"
@@ -143,14 +145,14 @@ function goList(status?: string) {
             </span>
           </button>
         </div>
-        <p v-else class="mt-6 text-sm text-muted">No hay fechas próximas.</p>
+        <p v-else class="mt-6 text-sm text-muted">{{ t('dashboard.noUpcomingDates') }}</p>
       </section>
     </div>
 
     <section class="mt-6 rounded-2xl border border-line bg-surface p-5 shadow-sm">
       <div class="flex items-center justify-between">
-        <h2 class="text-sm font-semibold">Actividad reciente</h2>
-        <p class="text-xs text-muted">Comentarios y cambios con fecha</p>
+        <h2 class="text-sm font-semibold">{{ t('dashboard.recentActivity') }}</h2>
+        <p class="text-xs text-muted">{{ t('dashboard.recentActivityHint') }}</p>
       </div>
       <div v-if="workspace.recentActivities.length" class="mt-4 grid gap-4 md:grid-cols-2">
         <ActivityItem
@@ -160,7 +162,7 @@ function goList(status?: string) {
           show-task
         />
       </div>
-      <p v-else class="mt-4 text-sm text-muted">Cuando crees o actualices tareas, aparecerán aquí.</p>
+      <p v-else class="mt-4 text-sm text-muted">{{ t('dashboard.noActivity') }}</p>
     </section>
   </div>
 </template>

@@ -4,10 +4,12 @@ import { Inbox, Pencil, Trash2 } from 'lucide-vue-next'
 import EmptyState from '@/components/EmptyState.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
 import { getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
+import { useI18n } from '@/i18n'
 import { isOverdue } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Task, TaskPriority, TaskStatus } from '@/types'
 
+const { t } = useI18n()
 const workspace = useWorkspaceStore()
 const composerRef = ref<InstanceType<typeof TaskComposer> | null>(null)
 const composer = computed(() => workspace.projects[0])
@@ -23,7 +25,7 @@ function startEdit(task: Task, e: Event) {
 
 async function removeTask(id: string, e: Event) {
   e.stopPropagation()
-  if (!confirm('¿Eliminar esta tarea?')) return
+  if (!confirm(t('list.confirmDelete'))) return
   await workspace.deleteTask(id)
 }
 
@@ -63,10 +65,10 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
   <div>
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-semibold tracking-tight">Lista</h1>
+        <h1 class="text-3xl font-semibold tracking-tight">{{ t('list.title') }}</h1>
         <p class="mt-1 text-sm text-muted">
-          {{ workspace.filteredTasks.length }} tareas
-          <span v-if="workspace.filters.projectId !== 'all' || workspace.filters.assigneeId !== 'all'"> filtradas</span>
+          {{ workspace.filteredTasks.length }} {{ t('list.taskCount') }}
+          <span v-if="workspace.filters.projectId !== 'all' || workspace.filters.assigneeId !== 'all'"> {{ t('list.filtered') }}</span>
         </p>
       </div>
       <TaskComposer ref="composerRef" v-if="composer" @created="open" />
@@ -76,7 +78,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
       <input
         :value="workspace.filters.search"
         class="w-full max-w-xs rounded-xl border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-accent"
-        placeholder="Buscar por título o descripción"
+        :placeholder="t('list.searchPlaceholder')"
         @input="workspace.setFilter('search', ($event.target as HTMLInputElement).value)"
       />
       <select
@@ -84,7 +86,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
         class="rounded-xl border border-line bg-surface px-3 py-2 text-sm"
         @change="workspace.setFilter('status', ($event.target as HTMLSelectElement).value as never)"
       >
-        <option value="all">Todos los estados</option>
+        <option value="all">{{ t('list.allStatuses') }}</option>
         <option v-for="status in STATUSES" :key="status.id" :value="status.id">{{ status.label }}</option>
       </select>
       <select
@@ -92,7 +94,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
         class="rounded-xl border border-line bg-surface px-3 py-2 text-sm"
         @change="workspace.setFilter('priority', ($event.target as HTMLSelectElement).value as never)"
       >
-        <option value="all">Todas las prioridades</option>
+        <option value="all">{{ t('list.allPriorities') }}</option>
         <option v-for="priority in PRIORITIES" :key="priority.id" :value="priority.id">{{ priority.label }}</option>
       </select>
       <select
@@ -100,7 +102,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
         class="rounded-xl border border-line bg-surface px-3 py-2 text-sm"
         @change="workspace.setFilter('projectId', ($event.target as HTMLSelectElement).value)"
       >
-        <option value="all">Todos los proyectos</option>
+        <option value="all">{{ t('list.allProjects') }}</option>
         <option v-for="project in workspace.projects" :key="project.id" :value="project.id">
           {{ project.name }}
         </option>
@@ -110,8 +112,8 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
         class="rounded-xl border border-line bg-surface px-3 py-2 text-sm"
         @change="workspace.setFilter('assigneeId', ($event.target as HTMLSelectElement).value as never)"
       >
-        <option value="all">Todos los asignados</option>
-        <option value="unassigned">Sin asignar</option>
+        <option value="all">{{ t('list.allAssignees') }}</option>
+        <option value="unassigned">{{ t('common.unassigned') }}</option>
         <option v-for="user in workspace.users" :key="user.id" :value="user.id">
           {{ user.fullName }}
         </option>
@@ -132,14 +134,14 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
         </colgroup>
         <thead class="bg-canvas/80 text-[11px] uppercase tracking-wide text-muted">
           <tr>
-            <th class="px-4 py-3 font-semibold">Tarea</th>
-            <th class="px-3 py-3 font-semibold">Asignado</th>
-            <th class="px-3 py-3 font-semibold">Estado</th>
-            <th class="px-3 py-3 font-semibold">Prioridad</th>
-            <th class="px-3 py-3 font-semibold">Inicio</th>
-            <th class="px-3 py-3 font-semibold">Vencimiento</th>
-            <th class="px-3 py-3 font-semibold">Proyecto</th>
-            <th class="px-4 py-3 font-semibold text-right">Acciones</th>
+            <th class="px-4 py-3 font-semibold">{{ t('list.thTask') }}</th>
+            <th class="px-3 py-3 font-semibold">{{ t('list.thAssignee') }}</th>
+            <th class="px-3 py-3 font-semibold">{{ t('list.thStatus') }}</th>
+            <th class="px-3 py-3 font-semibold">{{ t('list.thPriority') }}</th>
+            <th class="px-3 py-3 font-semibold">{{ t('list.thStart') }}</th>
+            <th class="px-3 py-3 font-semibold">{{ t('list.thDue') }}</th>
+            <th class="px-3 py-3 font-semibold">{{ t('list.thProject') }}</th>
+            <th class="px-4 py-3 font-semibold text-right">{{ t('list.thActions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -163,7 +165,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
                 class="w-full rounded-lg border border-line bg-canvas px-2 py-1 text-xs text-ink outline-none focus:border-accent"
                 @change="changeAssignee(task, ($event.target as HTMLSelectElement).value, $event)"
               >
-                <option value="">Sin asignar</option>
+                <option value="">{{ t('common.unassigned') }}</option>
                 <option v-for="user in workspace.users" :key="user.id" :value="user.id">
                   {{ user.fullName }}
                 </option>
@@ -232,7 +234,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
                 <button
                   type="button"
                   class="rounded-lg p-1.5 text-muted hover:bg-canvas hover:text-accent cursor-pointer"
-                  title="Editar tarea completa"
+                  :title="t('list.editFull')"
                   @click="startEdit(task, $event)"
                 >
                   <Pencil class="size-4" />
@@ -240,7 +242,7 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
                 <button
                   type="button"
                   class="rounded-lg p-1.5 text-muted hover:bg-rose-500/10 hover:text-rose-600 cursor-pointer"
-                  title="Eliminar tarea"
+                  :title="t('list.deleteTask')"
                   @click="removeTask(task.id, $event)"
                 >
                   <Trash2 class="size-4" />
@@ -252,8 +254,8 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
       </table>
       <div v-if="!workspace.filteredTasks.length" class="p-6">
         <EmptyState
-          title="Nada por aquí"
-          description="Prueba otro filtro o crea una tarea para empezar el tablero."
+          :title="t('list.emptyTitle')"
+          :description="t('list.emptyDescription')"
         >
           <template #icon><Inbox class="size-5" /></template>
         </EmptyState>
@@ -261,4 +263,3 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
     </div>
   </div>
 </template>
-
