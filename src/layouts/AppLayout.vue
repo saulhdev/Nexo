@@ -73,7 +73,7 @@ function filterProject(id: string) {
         <span class="grid size-8 place-items-center rounded-xl bg-accent text-sm font-bold text-white">N</span>
         <div>
           <p class="text-sm font-semibold tracking-wide">{{ APP_NAME }}</p>
-          <p class="text-[11px] text-white/45">Gestión de trabajo</p>
+          <p class="text-[11px] text-white/45">Gestión de Tareas</p>
         </div>
       </div>
 
