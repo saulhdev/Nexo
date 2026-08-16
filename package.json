@@ -1,5 +1,8 @@
 {
-  "name": "nexo",
+  "name": "Nexo",
+  "author": "Saul Henriquez",
+  "email": "saulhdev@hotmail.com",
+  "description": "Task management platform",
   "version": "0.1.0",
   "private": true,
   "type": "module",
