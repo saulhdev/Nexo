@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase'
+import { getUrgencyImportanceFromPriority } from '@/constants'
 import type {
   Activity,
   ActivityType,
@@ -39,6 +40,8 @@ interface TaskRow {
   description: string
   status: TaskStatus
   priority: TaskPriority
+  is_urgent?: boolean | null
+  is_important?: boolean | null
   start_date: string | null
   due_date: string | null
   position: number
@@ -98,6 +101,7 @@ function mapProject(row: ProjectRow): Project {
 }
 
 function mapTask(row: TaskRow): Task {
+  const defaultUi = getUrgencyImportanceFromPriority(row.priority)
   return {
     id: row.id,
     projectId: row.project_id,
@@ -107,6 +111,8 @@ function mapTask(row: TaskRow): Task {
     description: row.description,
     status: row.status,
     priority: row.priority,
+    isUrgent: row.is_urgent ?? defaultUi.isUrgent,
+    isImportant: row.is_important ?? defaultUi.isImportant,
     startDate: row.start_date,
     dueDate: row.due_date,
     position: row.position,
@@ -415,6 +421,11 @@ export function createSupabaseBackend(): Backend {
       const user = await requireUser()
       await ensureProfile(user)
       const status = input.status ?? 'todo'
+      const priority = input.priority ?? 'medium'
+      const defaultUi = getUrgencyImportanceFromPriority(priority)
+      const isUrgent = input.isUrgent ?? defaultUi.isUrgent
+      const isImportant = input.isImportant ?? defaultUi.isImportant
+
       const { data: last } = await getSupabase()
         .from('tasks')
         .select('position')
@@ -432,7 +443,9 @@ export function createSupabaseBackend(): Backend {
           title: input.title.trim(),
           description: input.description?.trim() ?? '',
           status,
-          priority: input.priority ?? 'medium',
+          priority,
+          is_urgent: isUrgent,
+          is_important: isImportant,
           start_date: input.startDate ?? null,
           due_date: input.dueDate ?? null,
           position: (last?.position ?? -1) + 1,
@@ -455,6 +468,8 @@ export function createSupabaseBackend(): Backend {
       if (input.description !== undefined) patch.description = input.description
       if (input.status !== undefined) patch.status = input.status
       if (input.priority !== undefined) patch.priority = input.priority
+      if (input.isUrgent !== undefined) patch.is_urgent = input.isUrgent
+      if (input.isImportant !== undefined) patch.is_important = input.isImportant
       if (input.startDate !== undefined) patch.start_date = input.startDate
       if (input.dueDate !== undefined) patch.due_date = input.dueDate
       if (input.projectId !== undefined) patch.project_id = input.projectId

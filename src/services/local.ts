@@ -1,4 +1,5 @@
 import { addDaysISO, todayISO } from '@/lib/dates'
+import { getUrgencyImportanceFromPriority } from '@/constants'
 import type {
   Activity,
   ActivityType,
@@ -183,8 +184,11 @@ function save(db: Db) {
 function withProject(db: Db, task: Task): Task {
   const project = db.projects.find((p) => p.id === task.projectId)
   const assignee = task.assigneeId ? (db.users || []).find((u) => u.id === task.assigneeId) : undefined
+  const defaultUi = getUrgencyImportanceFromPriority(task.priority)
   return {
     ...task,
+    isUrgent: task.isUrgent ?? defaultUi.isUrgent,
+    isImportant: task.isImportant ?? defaultUi.isImportant,
     project: project ? { id: project.id, name: project.name, color: project.color } : task.project,
     assignee: assignee ? { id: assignee.id, email: assignee.email, fullName: assignee.fullName, avatarUrl: assignee.avatarUrl } : undefined,
   }
@@ -310,6 +314,8 @@ export function createLocalBackend(): Backend {
     async createTask(input: CreateTaskInput) {
       const db = load()
       const siblings = db.tasks.filter((item) => item.status === (input.status ?? 'todo'))
+      const priority = input.priority ?? 'medium'
+      const defaultUi = getUrgencyImportanceFromPriority(priority)
       const task: Task = {
         id: crypto.randomUUID(),
         projectId: input.projectId,
@@ -318,7 +324,9 @@ export function createLocalBackend(): Backend {
         title: input.title.trim(),
         description: input.description?.trim() ?? '',
         status: input.status ?? 'todo',
-        priority: input.priority ?? 'medium',
+        priority,
+        isUrgent: input.isUrgent ?? defaultUi.isUrgent,
+        isImportant: input.isImportant ?? defaultUi.isImportant,
         startDate: input.startDate ?? null,
         dueDate: input.dueDate ?? null,
         position: siblings.length,
@@ -355,6 +363,12 @@ export function createLocalBackend(): Backend {
       if (input.priority !== undefined && input.priority !== task.priority) {
         pushActivity(db, task, 'priority.changed', { from: task.priority, to: input.priority })
         task.priority = input.priority
+      }
+      if (input.isUrgent !== undefined) {
+        task.isUrgent = input.isUrgent
+      }
+      if (input.isImportant !== undefined) {
+        task.isImportant = input.isImportant
       }
       if (input.startDate !== undefined && input.startDate !== task.startDate) {
         pushActivity(db, task, 'start_date.changed', { from: task.startDate, to: input.startDate })

@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { Calendar, ChevronDown, FileText, Flag, Folder, ListTodo, Paperclip, UserCheck, X } from 'lucide-vue-next'
-import { PRIORITIES, STATUSES } from '@/constants'
+import { Calendar, ChevronDown, FileText, Flag, Folder, Grid2x2, ListTodo, Paperclip, UserCheck, X } from 'lucide-vue-next'
+import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
 import { useWorkspaceStore } from '@/stores/workspace'
-import type { TaskPriority, TaskStatus } from '@/types'
+import type { Task, TaskPriority, TaskStatus } from '@/types'
 
 const props = withDefaults(
   defineProps<{
+    taskToEdit?: Task | null
     defaultStatus?: TaskStatus
+    defaultPriority?: TaskPriority
+    defaultUrgent?: boolean
+    defaultImportant?: boolean
     compact?: boolean
     autoOpen?: boolean
     showButton?: boolean
@@ -15,33 +19,87 @@ const props = withDefaults(
   { autoOpen: false, showButton: true },
 )
 
-const emit = defineEmits<{ created: [id: string]; cancel: [] }>()
+const emit = defineEmits<{ created: [id: string]; updated: [id: string]; cancel: [] }>()
 const workspace = useWorkspaceStore()
 const open = ref(props.autoOpen)
 const submitting = ref(false)
+const editingTaskId = ref<string | null>(null)
 
 const pendingFiles = ref<{ file: File; previewUrl?: string }[]>([])
 const fileInputRef = ref<HTMLInputElement | null>(null)
+
+const initialUrgent = props.defaultUrgent ?? (props.defaultPriority ? getUrgencyImportanceFromPriority(props.defaultPriority).isUrgent : false)
+const initialImportant = props.defaultImportant ?? (props.defaultPriority ? getUrgencyImportanceFromPriority(props.defaultPriority).isImportant : true)
 
 const form = reactive({
   title: '',
   description: '',
   status: (props.defaultStatus ?? 'todo') as TaskStatus,
-  priority: 'medium' as TaskPriority,
+  isUrgent: initialUrgent,
+  isImportant: initialImportant,
+  priority: (props.defaultPriority ?? getPriorityFromUrgencyImportance(initialUrgent, initialImportant)) as TaskPriority,
   startDate: '',
   dueDate: '',
   projectId: '',
   assigneeId: '',
 })
 
+const isEditing = computed(() => Boolean(editingTaskId.value))
+
+const currentQuadrant = computed(() =>
+  getQuadrantFromTask({ isUrgent: form.isUrgent, isImportant: form.isImportant, priority: form.priority }),
+)
+
 const canSubmit = computed(() => form.title.trim().length > 0 && Boolean(form.projectId))
+
+watch(
+  () => props.taskToEdit,
+  (task) => {
+    if (task) {
+      editTask(task)
+    }
+  },
+  { immediate: true },
+)
 
 watch(
   () => props.defaultStatus,
   (val) => {
-    if (val) form.status = val
+    if (val && !isEditing.value) form.status = val
   },
 )
+
+function editTask(task: Task) {
+  editingTaskId.value = task.id
+  form.title = task.title
+  form.description = task.description || ''
+  form.status = task.status
+  form.priority = task.priority
+  form.isUrgent = task.isUrgent ?? (task.priority === 'urgent' || task.priority === 'medium')
+  form.isImportant = task.isImportant ?? (task.priority === 'urgent' || task.priority === 'high')
+  form.startDate = task.startDate ?? ''
+  form.dueDate = task.dueDate ?? ''
+  form.projectId = task.projectId
+  form.assigneeId = task.assigneeId ?? ''
+  open.value = true
+}
+
+function setUrgent(val: boolean) {
+  form.isUrgent = val
+  form.priority = getPriorityFromUrgencyImportance(form.isUrgent, form.isImportant)
+}
+
+function setImportant(val: boolean) {
+  form.isImportant = val
+  form.priority = getPriorityFromUrgencyImportance(form.isUrgent, form.isImportant)
+}
+
+function onPriorityChange(newPriority: TaskPriority) {
+  form.priority = newPriority
+  const ui = getUrgencyImportanceFromPriority(newPriority)
+  form.isUrgent = ui.isUrgent
+  form.isImportant = ui.isImportant
+}
 
 function triggerFileSelect() {
   fileInputRef.value?.click()
@@ -76,10 +134,13 @@ function formatFileSize(bytes: number) {
 }
 
 function reset() {
+  editingTaskId.value = null
   form.title = ''
   form.description = ''
   form.status = props.defaultStatus ?? 'todo'
-  form.priority = 'medium'
+  form.isUrgent = props.defaultUrgent ?? false
+  form.isImportant = props.defaultImportant ?? true
+  form.priority = props.defaultPriority ?? getPriorityFromUrgencyImportance(form.isUrgent, form.isImportant)
   form.startDate = ''
   form.dueDate = ''
   form.projectId = workspace.projects[0]?.id ?? ''
@@ -90,7 +151,12 @@ function reset() {
   pendingFiles.value = []
 }
 
-function start() {
+function start(taskToStartEdit?: Task) {
+  if (taskToStartEdit) {
+    editTask(taskToStartEdit)
+    return
+  }
+  reset()
   if (!form.projectId) form.projectId = workspace.projects[0]?.id ?? ''
   open.value = true
 }
@@ -99,26 +165,53 @@ async function submit() {
   if (!canSubmit.value) return
   submitting.value = true
   try {
-    const task = await workspace.createTask({
-      title: form.title,
-      description: form.description,
-      status: form.status,
-      priority: form.priority,
-      startDate: form.startDate || null,
-      dueDate: form.dueDate || null,
-      projectId: form.projectId,
-      assigneeId: form.assigneeId || null,
-    })
+    if (isEditing.value && editingTaskId.value) {
+      const task = await workspace.updateTask(editingTaskId.value, {
+        title: form.title,
+        description: form.description,
+        status: form.status,
+        priority: form.priority,
+        isUrgent: form.isUrgent,
+        isImportant: form.isImportant,
+        startDate: form.startDate || null,
+        dueDate: form.dueDate || null,
+        projectId: form.projectId,
+        assigneeId: form.assigneeId || null,
+      })
 
-    if (pendingFiles.value.length > 0) {
-      for (const item of pendingFiles.value) {
-        await workspace.uploadAttachment(item.file, task.id)
+      if (pendingFiles.value.length > 0) {
+        for (const item of pendingFiles.value) {
+          await workspace.uploadAttachment(item.file, task.id)
+        }
       }
-    }
 
-    reset()
-    open.value = false
-    emit('created', task.id)
+      reset()
+      open.value = false
+      emit('updated', task.id)
+    } else {
+      const task = await workspace.createTask({
+        title: form.title,
+        description: form.description,
+        status: form.status,
+        priority: form.priority,
+        isUrgent: form.isUrgent,
+        isImportant: form.isImportant,
+        startDate: form.startDate || null,
+        dueDate: form.dueDate || null,
+        projectId: form.projectId,
+        assigneeId: form.assigneeId || null,
+      })
+
+      if (pendingFiles.value.length > 0) {
+        for (const item of pendingFiles.value) {
+          await workspace.uploadAttachment(item.file, task.id)
+        }
+      }
+
+      reset()
+      open.value = false
+      emit('created', task.id)
+    }
   } finally {
     submitting.value = false
   }
@@ -134,7 +227,7 @@ onMounted(() => {
   if (props.autoOpen) start()
 })
 
-defineExpose({ start })
+defineExpose({ start, editTask })
 </script>
 
 <template>
@@ -143,7 +236,7 @@ defineExpose({ start })
       v-if="showButton"
       type="button"
       class="inline-flex items-center gap-2 rounded-xl bg-accent px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-accent-dark cursor-pointer"
-      @click="start"
+      @click="start()"
     >
       Nueva tarea
     </button>
@@ -157,8 +250,10 @@ defineExpose({ start })
           <div class="w-full max-w-3xl rounded-2xl border border-line bg-surface p-6 shadow-2xl">
             <header class="flex items-center justify-between border-b border-line pb-4">
               <div>
-                <h2 class="text-xl font-semibold text-ink">Nueva tarea</h2>
-                <p class="text-xs text-muted">Crea y organiza una nueva tarea en tu espacio de trabajo.</p>
+                <h2 class="text-xl font-semibold text-ink">{{ isEditing ? 'Editar tarea' : 'Nueva tarea' }}</h2>
+                <p class="text-xs text-muted">
+                  {{ isEditing ? 'Modifica los detalles de la tarea.' : 'Crea y organiza una nueva tarea en tu espacio de trabajo.' }}
+                </p>
               </div>
               <button
                 type="button"
@@ -190,7 +285,7 @@ defineExpose({ start })
                 />
               </div>
 
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <label class="block text-xs font-semibold uppercase tracking-wider text-muted">Proyecto</label>
                   <div class="relative mt-1.5">
@@ -240,22 +335,6 @@ defineExpose({ start })
                     <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
                   </div>
                 </div>
-
-                <div>
-                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">Prioridad</label>
-                  <div class="relative mt-1.5">
-                    <Flag class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                    <select
-                      v-model="form.priority"
-                      class="field-input pl-10 pr-9"
-                    >
-                      <option v-for="priority in PRIORITIES" :key="priority.id" :value="priority.id">
-                        {{ priority.label }}
-                      </option>
-                    </select>
-                    <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                  </div>
-                </div>
               </div>
 
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -280,6 +359,86 @@ defineExpose({ start })
                       type="date"
                       class="field-input pl-10 pr-3"
                     />
+                  </div>
+                </div>
+              </div>
+
+              <!-- MATRIZ DE EISENHOWER & PRIORIDAD -->
+              <div class="rounded-xl border border-line bg-canvas/60 p-4">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted">
+                    <Grid2x2 class="size-4 text-accent" />
+                    <span>Matriz de Eisenhower</span>
+                  </div>
+                  <span
+                    class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium"
+                    :class="currentQuadrant.badgeClass"
+                  >
+                    <span>{{ currentQuadrant.name }}:</span>
+                    <strong class="font-semibold">{{ currentQuadrant.action }}</strong>
+                  </span>
+                </div>
+
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <label class="block text-[11px] font-semibold text-muted mb-1">Urgencia</label>
+                    <div class="grid grid-cols-2 gap-1 rounded-lg border border-line bg-surface p-1">
+                      <button
+                        type="button"
+                        class="rounded-md px-2 py-1 text-xs font-medium transition cursor-pointer"
+                        :class="form.isUrgent ? 'bg-rose-500/15 text-rose-600 font-semibold' : 'text-muted hover:text-ink'"
+                        @click="setUrgent(true)"
+                      >
+                        ⚡ Urgente
+                      </button>
+                      <button
+                        type="button"
+                        class="rounded-md px-2 py-1 text-xs font-medium transition cursor-pointer"
+                        :class="!form.isUrgent ? 'bg-canvas text-ink font-semibold' : 'text-muted hover:text-ink'"
+                        @click="setUrgent(false)"
+                      >
+                        ⏳ No urgente
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-semibold text-muted mb-1">Importancia</label>
+                    <div class="grid grid-cols-2 gap-1 rounded-lg border border-line bg-surface p-1">
+                      <button
+                        type="button"
+                        class="rounded-md px-2 py-1 text-xs font-medium transition cursor-pointer"
+                        :class="form.isImportant ? 'bg-amber-500/15 text-amber-600 font-semibold' : 'text-muted hover:text-ink'"
+                        @click="setImportant(true)"
+                      >
+                        ⭐ Importante
+                      </button>
+                      <button
+                        type="button"
+                        class="rounded-md px-2 py-1 text-xs font-medium transition cursor-pointer"
+                        :class="!form.isImportant ? 'bg-canvas text-ink font-semibold' : 'text-muted hover:text-ink'"
+                        @click="setImportant(false)"
+                      >
+                        ⚪ No importante
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-semibold text-muted mb-1">Prioridad Asignada</label>
+                    <div class="relative">
+                      <Flag class="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted" />
+                      <select
+                        :value="form.priority"
+                        class="field-input pl-8 pr-8 text-xs font-medium"
+                        @change="onPriorityChange(($event.target as HTMLSelectElement).value as TaskPriority)"
+                      >
+                        <option v-for="priority in PRIORITIES" :key="priority.id" :value="priority.id">
+                          {{ priority.label }}
+                        </option>
+                      </select>
+                      <ChevronDown class="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -336,7 +495,7 @@ defineExpose({ start })
               <div class="mt-6 flex justify-end gap-3 border-t border-line pt-4">
                 <button type="button" class="ghost cursor-pointer" @click="cancel">Cancelar</button>
                 <button type="submit" class="primary cursor-pointer" :disabled="!canSubmit || submitting">
-                  {{ submitting ? (pendingFiles.length ? 'Subiendo archivos…' : 'Creando…') : 'Crear tarea' }}
+                  {{ submitting ? (pendingFiles.length ? 'Subiendo archivos…' : (isEditing ? 'Guardando…' : 'Creando…')) : (isEditing ? 'Guardar cambios' : 'Crear tarea') }}
                 </button>
               </div>
             </form>

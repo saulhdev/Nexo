@@ -1,30 +1,61 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Inbox } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { Inbox, Pencil, Trash2 } from 'lucide-vue-next'
 import EmptyState from '@/components/EmptyState.vue'
-import PriorityBadge from '@/components/PriorityBadge.vue'
-import StatusBadge from '@/components/StatusBadge.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
-import { PRIORITIES, STATUSES } from '@/constants'
-import { dueLabel, formatDate, isOverdue } from '@/lib/dates'
+import { getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
+import { isOverdue } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
+import type { Task, TaskPriority, TaskStatus } from '@/types'
 
 const workspace = useWorkspaceStore()
+const composerRef = ref<InstanceType<typeof TaskComposer> | null>(null)
 const composer = computed(() => workspace.projects[0])
 
 function open(id: string) {
   void workspace.openTask(id)
 }
 
-function getInitials(name?: string) {
-  if (!name) return '?'
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
+function startEdit(task: Task, e: Event) {
+  e.stopPropagation()
+  composerRef.value?.start(task)
+}
+
+async function removeTask(id: string, e: Event) {
+  e.stopPropagation()
+  if (!confirm('¿Eliminar esta tarea?')) return
+  await workspace.deleteTask(id)
+}
+
+async function changeStatus(task: Task, status: TaskStatus, e: Event) {
+  e.stopPropagation()
+  await workspace.updateTask(task.id, { status })
+}
+
+async function changePriority(task: Task, priority: TaskPriority, e: Event) {
+  e.stopPropagation()
+  const ui = getUrgencyImportanceFromPriority(priority)
+  await workspace.updateTask(task.id, { priority, isUrgent: ui.isUrgent, isImportant: ui.isImportant })
+}
+
+async function changeAssignee(task: Task, assigneeId: string, e: Event) {
+  e.stopPropagation()
+  await workspace.updateTask(task.id, { assigneeId: assigneeId || null })
+}
+
+async function changeProject(task: Task, projectId: string, e: Event) {
+  e.stopPropagation()
+  await workspace.updateTask(task.id, { projectId })
+}
+
+async function changeStartDate(task: Task, startDate: string, e: Event) {
+  e.stopPropagation()
+  await workspace.updateTask(task.id, { startDate: startDate || null })
+}
+
+async function changeDueDate(task: Task, dueDate: string, e: Event) {
+  e.stopPropagation()
+  await workspace.updateTask(task.id, { dueDate: dueDate || null })
 }
 </script>
 
@@ -38,7 +69,7 @@ function getInitials(name?: string) {
           <span v-if="workspace.filters.projectId !== 'all' || workspace.filters.assigneeId !== 'all'"> filtradas</span>
         </p>
       </div>
-      <TaskComposer v-if="composer" @created="open" />
+      <TaskComposer ref="composerRef" v-if="composer" @created="open" />
     </div>
 
     <div class="mt-6 flex flex-wrap gap-2">
@@ -87,56 +118,124 @@ function getInitials(name?: string) {
       </select>
     </div>
 
-    <div class="mt-4 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
-      <table class="w-full text-left text-sm">
+    <div class="mt-4 overflow-x-auto rounded-2xl border border-line bg-surface shadow-sm">
+      <table class="w-full text-left text-sm min-w-[850px]">
         <thead class="bg-canvas/80 text-[11px] uppercase tracking-wide text-muted">
           <tr>
-            <th class="px-4 py-3 font-semibold">Tarea</th>
-            <th class="px-4 py-3 font-semibold">Asignado</th>
-            <th class="px-4 py-3 font-semibold">Estado</th>
-            <th class="px-4 py-3 font-semibold">Prioridad</th>
-            <th class="px-4 py-3 font-semibold">Inicio</th>
-            <th class="px-4 py-3 font-semibold">Vencimiento</th>
-            <th class="px-4 py-3 font-semibold">Proyecto</th>
+            <th class="px-4 py-3 font-semibold min-w-56">Tarea</th>
+            <th class="px-3 py-3 font-semibold">Asignado</th>
+            <th class="px-3 py-3 font-semibold">Estado</th>
+            <th class="px-3 py-3 font-semibold">Prioridad</th>
+            <th class="px-3 py-3 font-semibold">Inicio</th>
+            <th class="px-3 py-3 font-semibold">Vencimiento</th>
+            <th class="px-3 py-3 font-semibold">Proyecto</th>
+            <th class="px-4 py-3 font-semibold text-right">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <tr
             v-for="task in workspace.filteredTasks"
             :key="task.id"
-            class="cursor-pointer border-t border-line/80 hover:bg-canvas/70"
-            @click="open(task.id)"
+            class="group border-t border-line/80 hover:bg-canvas/70"
           >
-            <td class="px-4 py-3">
-              <p class="font-medium">{{ task.title }}</p>
+            <!-- Título y Descripción -->
+            <td class="px-4 py-3 cursor-pointer" @click="open(task.id)">
+              <p class="font-medium text-ink hover:text-accent transition">{{ task.title }}</p>
               <p v-if="task.description" class="mt-0.5 line-clamp-1 text-xs text-muted">
                 {{ task.description }}
               </p>
             </td>
-            <td class="px-4 py-3">
-              <div v-if="task.assignee" class="inline-flex items-center gap-2" :title="task.assignee.fullName">
-                <span class="flex size-6 items-center justify-center rounded-full bg-accent/15 text-[11px] font-bold text-accent">
-                  {{ getInitials(task.assignee.fullName) }}
-                </span>
-                <span class="text-xs text-ink truncate max-w-[110px]">{{ task.assignee.fullName }}</span>
+
+            <!-- Asignado (editable) -->
+            <td class="px-3 py-3" @click.stop>
+              <select
+                :value="task.assigneeId ?? ''"
+                class="rounded-lg border border-line bg-canvas px-2 py-1 text-xs text-ink outline-none focus:border-accent"
+                @change="changeAssignee(task, ($event.target as HTMLSelectElement).value, $event)"
+              >
+                <option value="">Sin asignar</option>
+                <option v-for="user in workspace.users" :key="user.id" :value="user.id">
+                  {{ user.fullName }}
+                </option>
+              </select>
+            </td>
+
+            <!-- Estado (editable) -->
+            <td class="px-3 py-3" @click.stop>
+              <select
+                :value="task.status"
+                class="rounded-lg border border-line bg-canvas px-2 py-1 text-xs font-medium text-ink outline-none focus:border-accent"
+                @change="changeStatus(task, ($event.target as HTMLSelectElement).value as TaskStatus, $event)"
+              >
+                <option v-for="s in STATUSES" :key="s.id" :value="s.id">{{ s.label }}</option>
+              </select>
+            </td>
+
+            <!-- Prioridad (editable) -->
+            <td class="px-3 py-3" @click.stop>
+              <select
+                :value="task.priority"
+                class="rounded-lg border border-line bg-canvas px-2 py-1 text-xs font-medium text-ink outline-none focus:border-accent"
+                @change="changePriority(task, ($event.target as HTMLSelectElement).value as TaskPriority, $event)"
+              >
+                <option v-for="p in PRIORITIES" :key="p.id" :value="p.id">{{ p.label }}</option>
+              </select>
+            </td>
+
+            <!-- Fecha Inicio (editable) -->
+            <td class="px-3 py-3" @click.stop>
+              <input
+                :value="task.startDate ?? ''"
+                type="date"
+                class="rounded-lg border border-line bg-canvas px-1.5 py-1 text-xs text-muted outline-none focus:border-accent"
+                @change="changeStartDate(task, ($event.target as HTMLInputElement).value, $event)"
+              />
+            </td>
+
+            <!-- Fecha Vencimiento (editable) -->
+            <td class="px-3 py-3" @click.stop>
+              <input
+                :value="task.dueDate ?? ''"
+                type="date"
+                class="rounded-lg border border-line bg-canvas px-1.5 py-1 text-xs outline-none focus:border-accent"
+                :class="isOverdue(task.dueDate, task.status) ? 'font-medium text-rose-600 border-rose-300' : 'text-muted'"
+                @change="changeDueDate(task, ($event.target as HTMLInputElement).value, $event)"
+              />
+            </td>
+
+            <!-- Proyecto (editable) -->
+            <td class="px-3 py-3" @click.stop>
+              <select
+                :value="task.projectId"
+                class="rounded-lg border border-line bg-canvas px-2 py-1 text-xs font-medium text-ink outline-none focus:border-accent"
+                @change="changeProject(task, ($event.target as HTMLSelectElement).value, $event)"
+              >
+                <option v-for="proj in workspace.projects" :key="proj.id" :value="proj.id">
+                  {{ proj.name }}
+                </option>
+              </select>
+            </td>
+
+            <!-- Acciones -->
+            <td class="px-4 py-3 text-right" @click.stop>
+              <div class="flex items-center justify-end gap-1">
+                <button
+                  type="button"
+                  class="rounded-lg p-1.5 text-muted hover:bg-canvas hover:text-accent cursor-pointer"
+                  title="Editar tarea completa"
+                  @click="startEdit(task, $event)"
+                >
+                  <Pencil class="size-4" />
+                </button>
+                <button
+                  type="button"
+                  class="rounded-lg p-1.5 text-muted hover:bg-rose-500/10 hover:text-rose-600 cursor-pointer"
+                  title="Eliminar tarea"
+                  @click="removeTask(task.id, $event)"
+                >
+                  <Trash2 class="size-4" />
+                </button>
               </div>
-              <span v-else class="text-xs text-muted/60 font-normal">Sin asignar</span>
-            </td>
-            <td class="px-4 py-3"><StatusBadge :status="task.status" /></td>
-            <td class="px-4 py-3"><PriorityBadge :priority="task.priority" /></td>
-            <td class="px-4 py-3 text-xs text-muted">
-              {{ task.startDate ? formatDate(task.startDate) : 'Sin fecha' }}
-            </td>
-            <td class="px-4 py-3 text-xs">
-              <span :class="isOverdue(task.dueDate, task.status) ? 'font-medium text-rose-600' : 'text-muted'">
-                {{ dueLabel(task.dueDate) }}
-              </span>
-            </td>
-            <td class="px-4 py-3">
-              <span class="inline-flex items-center gap-2 text-xs font-medium">
-                <span class="size-2 rounded-full" :style="{ background: task.project?.color }" />
-                {{ task.project?.name }}
-              </span>
             </td>
           </tr>
         </tbody>
@@ -152,3 +251,4 @@ function getInitials(name?: string) {
     </div>
   </div>
 </template>
+

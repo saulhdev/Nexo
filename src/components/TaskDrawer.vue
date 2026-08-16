@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Download, FileText, Paperclip, Trash2, Upload, X } from 'lucide-vue-next'
-import { PRIORITIES, STATUSES } from '@/constants'
+import { Download, FileText, Grid2x2, Paperclip, Trash2, Upload, X } from 'lucide-vue-next'
+import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
 import { formatDateTime } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
+import type { TaskPriority } from '@/types'
 import ActivityItem from '@/components/ActivityItem.vue'
 
 const workspace = useWorkspaceStore()
@@ -16,6 +17,7 @@ const description = ref('')
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const task = computed(() => workspace.activeTask)
+const taskQuadrant = computed(() => (task.value ? getQuadrantFromTask(task.value) : null))
 
 watch(
   () => task.value,
@@ -34,6 +36,26 @@ async function persist(patch: Parameters<typeof workspace.updateTask>[1]) {
   } finally {
     saving.value = false
   }
+}
+
+async function updateUrgency(isUrgent: boolean) {
+  if (!task.value) return
+  const isImportant = task.value.isImportant ?? (task.value.priority === 'urgent' || task.value.priority === 'high')
+  const newPriority = getPriorityFromUrgencyImportance(isUrgent, isImportant)
+  await persist({ isUrgent, isImportant, priority: newPriority })
+}
+
+async function updateImportance(isImportant: boolean) {
+  if (!task.value) return
+  const isUrgent = task.value.isUrgent ?? (task.value.priority === 'urgent' || task.value.priority === 'medium')
+  const newPriority = getPriorityFromUrgencyImportance(isUrgent, isImportant)
+  await persist({ isUrgent, isImportant, priority: newPriority })
+}
+
+async function updatePriority(priority: TaskPriority) {
+  if (!task.value) return
+  const ui = getUrgencyImportanceFromPriority(priority)
+  await persist({ priority, isUrgent: ui.isUrgent, isImportant: ui.isImportant })
 }
 
 async function saveTitle() {
@@ -125,6 +147,64 @@ function close() {
           </div>
         </header>
 
+        <!-- SECCIÓN MATRIZ DE EISENHOWER EN DRAWER -->
+        <div v-if="taskQuadrant" class="border-b border-line bg-canvas/40 px-5 py-3">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted">
+              <Grid2x2 class="size-3.5 text-accent" />
+              Matriz de Eisenhower
+            </span>
+            <span class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded border" :class="taskQuadrant.badgeClass">
+              {{ taskQuadrant.name }}: {{ taskQuadrant.action }}
+            </span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="flex items-center justify-between rounded-lg border border-line bg-surface p-1.5">
+              <span class="text-muted font-medium">Urgencia:</span>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  class="rounded px-2 py-0.5 font-medium transition cursor-pointer"
+                  :class="task.isUrgent ? 'bg-rose-500/20 text-rose-600 font-bold' : 'text-muted hover:text-ink'"
+                  @click="updateUrgency(true)"
+                >
+                  Sí
+                </button>
+                <button
+                  type="button"
+                  class="rounded px-2 py-0.5 font-medium transition cursor-pointer"
+                  :class="!task.isUrgent ? 'bg-canvas text-ink font-bold' : 'text-muted hover:text-ink'"
+                  @click="updateUrgency(false)"
+                >
+                  No
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between rounded-lg border border-line bg-surface p-1.5">
+              <span class="text-muted font-medium">Importancia:</span>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  class="rounded px-2 py-0.5 font-medium transition cursor-pointer"
+                  :class="task.isImportant ? 'bg-amber-500/20 text-amber-600 font-bold' : 'text-muted hover:text-ink'"
+                  @click="updateImportance(true)"
+                >
+                  Sí
+                </button>
+                <button
+                  type="button"
+                  class="rounded px-2 py-0.5 font-medium transition cursor-pointer"
+                  :class="!task.isImportant ? 'bg-canvas text-ink font-bold' : 'text-muted hover:text-ink'"
+                  @click="updateImportance(false)"
+                >
+                  No
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="grid grid-cols-2 gap-3 border-b border-line px-5 py-4">
           <label class="field-label">
             Estado
@@ -134,7 +214,7 @@ function close() {
           </label>
           <label class="field-label">
             Prioridad
-            <select :value="task.priority" class="field" @change="persist({ priority: ($event.target as HTMLSelectElement).value as typeof task.priority })">
+            <select :value="task.priority" class="field" @change="updatePriority(($event.target as HTMLSelectElement).value as TaskPriority)">
               <option v-for="priority in PRIORITIES" :key="priority.id" :value="priority.id">{{ priority.label }}</option>
             </select>
           </label>

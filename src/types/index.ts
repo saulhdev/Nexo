@@ -37,6 +37,8 @@ export interface Task {
   description: string
   status: TaskStatus
   priority: TaskPriority
+  isUrgent?: boolean
+  isImportant?: boolean
   startDate: string | null
   dueDate: string | null
   position: number
@@ -90,6 +92,8 @@ export interface CreateTaskInput {
   description?: string
   status?: TaskStatus
   priority?: TaskPriority
+  isUrgent?: boolean
+  isImportant?: boolean
   startDate?: string | null
   dueDate?: string | null
   projectId: string
@@ -101,6 +105,8 @@ export interface UpdateTaskInput {
   description?: string
   status?: TaskStatus
   priority?: TaskPriority
+  isUrgent?: boolean
+  isImportant?: boolean
   startDate?: string | null
   dueDate?: string | null
   projectId?: string
