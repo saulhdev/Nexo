@@ -25,6 +25,7 @@ const router = createRouter({
         { path: 'lista', name: 'list', component: () => import('@/views/ListView.vue') },
         { path: 'tablero', name: 'board', component: () => import('@/views/KanbanView.vue') },
         { path: 'matriz', name: 'matrix', component: () => import('@/views/EisenhowerView.vue') },
+        { path: 'calendario', name: 'calendar', component: () => import('@/views/CalendarView.vue') },
         { path: 'perfil', name: 'profile', component: () => import('@/views/ProfileView.vue') },
       ],
     },

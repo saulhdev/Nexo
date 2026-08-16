@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import { Columns3, Grid2x2, LayoutDashboard, ListChecks, LogOut, Plus, User } from 'lucide-vue-next'
+import { CalendarDays, Columns3, Grid2x2, LayoutDashboard, ListChecks, LogOut, Plus, User } from 'lucide-vue-next'
 import { APP_NAME } from '@/constants'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
@@ -19,6 +19,7 @@ const nav = [
   { name: 'list', label: 'Lista', icon: ListChecks },
   { name: 'board', label: 'Tablero', icon: Columns3 },
   { name: 'matrix', label: 'Matriz', icon: Grid2x2 },
+  { name: 'calendar', label: 'Calendario', icon: CalendarDays },
   { name: 'profile', label: 'Mi Perfil', icon: User },
 ]
 
