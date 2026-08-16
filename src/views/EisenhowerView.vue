@@ -25,11 +25,12 @@ const projectFilterOptions = computed(() => [
 
 const statusFilterOptions = computed(() => [
   { label: t('list.allStatuses'), value: 'all' },
-  ...STATUSES,
+  ...STATUSES.filter((s) => s.id !== 'done'),
 ])
 
 function quadrantTasks(quadrant: EisenhowerQuadrant): Task[] {
   return workspace.filteredTasks.filter((task) => {
+    if (task.status === 'done') return false
     const q = getQuadrantFromTask(task)
     return q.id === quadrant.id
   })
