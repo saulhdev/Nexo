@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Download, FileText, Grid2x2, Paperclip, Trash2, Upload, X } from 'lucide-vue-next'
+import { Download, FileText, Grid2x2, Paperclip, Plus, Trash2, Upload, X } from 'lucide-vue-next'
 import CustomDatePicker from '@/components/CustomDatePicker.vue'
 import CustomSelect from '@/components/CustomSelect.vue'
 import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
 import { useI18n } from '@/i18n'
 import { formatDateTime } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
-import type { TaskPriority } from '@/types'
+import type { Subtask, TaskPriority } from '@/types'
 import ActivityItem from '@/components/ActivityItem.vue'
 import RichTextEditor from '@/components/RichTextEditor.vue'
 import RichTextViewer from '@/components/RichTextViewer.vue'
@@ -20,10 +20,17 @@ const saving = ref(false)
 const uploading = ref(false)
 const title = ref('')
 const description = ref('')
+const newSubtaskTitle = ref('')
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const task = computed(() => workspace.activeTask)
 const taskQuadrant = computed(() => (task.value ? getQuadrantFromTask(task.value) : null))
+
+const subtasks = computed(() => workspace.subtasks)
+const completedSubtasksCount = computed(() => subtasks.value.filter((st) => st.completed).length)
+const subtasksPercent = computed(() =>
+  subtasks.value.length ? Math.round((completedSubtasksCount.value / subtasks.value.length) * 100) : 0,
+)
 
 const projectOptions = computed(() =>
   workspace.projects.map((p) => ({ label: p.name, value: p.id }))
@@ -33,6 +40,25 @@ const assigneeOptions = computed(() => [
   { label: t('common.unassigned'), value: '' },
   ...workspace.users.map((u) => ({ label: u.fullName, value: u.id })),
 ])
+
+async function onAddSubtask() {
+  if (!newSubtaskTitle.value.trim()) return
+  await workspace.createSubtask(newSubtaskTitle.value)
+  newSubtaskTitle.value = ''
+}
+
+async function toggleSubtask(st: Subtask) {
+  await workspace.toggleSubtask(st)
+}
+
+async function onUpdateSubtaskTitle(id: string, newTitle: string) {
+  if (!newTitle.trim()) return
+  await workspace.updateSubtaskTitle(id, newTitle)
+}
+
+async function deleteSubtask(id: string) {
+  await workspace.deleteSubtask(id)
+}
 
 
 watch(
@@ -275,7 +301,7 @@ function close() {
         </div>
 
         <div class="flex-1 overflow-y-auto scrollbar-thin">
-          <section class="px-5 py-4">
+          <section class="px-5 py-4 border-b border-line">
             <p class="text-xs font-semibold uppercase tracking-wide text-muted">{{ t('drawer.description') }}</p>
             <RichTextEditor
               v-model="description"
@@ -290,7 +316,81 @@ function close() {
             </p>
           </section>
 
-          <section class="px-5 pb-6">
+          <!-- SECCIÓN DE SUBTAREAS -->
+          <section class="border-b border-line px-5 py-4">
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <div class="flex items-center gap-2">
+                <p class="text-xs font-semibold uppercase tracking-wide text-muted">{{ t('drawer.subtasks') }}</p>
+                <span v-if="subtasks.length" class="text-xs font-medium text-muted">
+                  ({{ completedSubtasksCount }}/{{ subtasks.length }})
+                </span>
+              </div>
+              <span v-if="subtasks.length" class="text-xs text-muted font-medium">
+                {{ subtasksPercent }}%
+              </span>
+            </div>
+
+            <!-- Barra de progreso -->
+            <div v-if="subtasks.length" class="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-canvas border border-line/40">
+              <div
+                class="h-full bg-accent transition-all duration-300 rounded-full"
+                :style="{ width: `${subtasksPercent}%` }"
+              />
+            </div>
+
+            <!-- Lista de subtareas -->
+            <div v-if="subtasks.length" class="space-y-1.5 mb-3">
+              <div
+                v-for="subtask in subtasks"
+                :key="subtask.id"
+                class="group flex items-center justify-between gap-2.5 rounded-lg border border-line/60 bg-surface px-3 py-2 text-sm transition hover:border-accent/40"
+              >
+                <div class="flex flex-1 items-center gap-2.5 min-w-0">
+                  <input
+                    type="checkbox"
+                    :checked="subtask.completed"
+                    class="size-4 shrink-0 rounded border-line text-accent focus:ring-accent accent-accent cursor-pointer"
+                    @change="toggleSubtask(subtask)"
+                  />
+                  <input
+                    :value="subtask.title"
+                    class="flex-1 bg-transparent text-sm outline-none transition"
+                    :class="subtask.completed ? 'line-through text-muted' : 'text-ink font-medium'"
+                    @blur="onUpdateSubtaskTitle(subtask.id, ($event.target as HTMLInputElement).value)"
+                    @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
+                  />
+                </div>
+                <button
+                  type="button"
+                  class="opacity-0 group-hover:opacity-100 p-1 text-muted hover:text-rose-600 rounded transition cursor-pointer"
+                  :title="t('drawer.deleteSubtask')"
+                  @click="deleteSubtask(subtask.id)"
+                >
+                  <Trash2 class="size-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Input para nueva subtarea -->
+            <form class="flex items-center gap-2" @submit.prevent="onAddSubtask">
+              <input
+                v-model="newSubtaskTitle"
+                type="text"
+                :placeholder="t('drawer.subtaskPlaceholder')"
+                class="flex-1 rounded-lg border border-line bg-canvas px-3 py-1.5 text-xs text-ink placeholder:text-muted outline-none focus:border-accent focus:bg-surface transition"
+              />
+              <button
+                type="submit"
+                :disabled="!newSubtaskTitle.trim()"
+                class="inline-flex items-center gap-1 rounded-lg bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent hover:text-white disabled:opacity-40 transition cursor-pointer shrink-0"
+              >
+                <Plus class="size-3.5" />
+                {{ t('drawer.addSubtask') }}
+              </button>
+            </form>
+          </section>
+
+          <section class="px-5 py-4 pb-6">
             <div class="flex gap-4 border-b border-line">
               <button
                 class="tab"

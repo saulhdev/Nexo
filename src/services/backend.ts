@@ -2,12 +2,15 @@ import type {
   Activity,
   Comment,
   CreateProjectInput,
+  CreateSubtaskInput,
   CreateTaskInput,
   Project,
+  Subtask,
   Task,
   TaskAttachment,
   TaskFilters,
   UpdateProjectInput,
+  UpdateSubtaskInput,
   UpdateTaskInput,
   User,
 } from '@/types'
@@ -32,6 +35,11 @@ export interface Backend {
   updateTask(id: string, input: UpdateTaskInput): Promise<Task>
   deleteTask(id: string): Promise<void>
   reorderColumn(status: Task['status'], orderedIds: string[]): Promise<void>
+
+  listSubtasks(taskId: string): Promise<Subtask[]>
+  createSubtask(taskId: string, input: CreateSubtaskInput | string): Promise<Subtask>
+  updateSubtask(id: string, input: UpdateSubtaskInput): Promise<Subtask>
+  deleteSubtask(id: string): Promise<void>
 
   listComments(taskId: string): Promise<Comment[]>
   addComment(taskId: string, body: string): Promise<Comment>

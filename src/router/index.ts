@@ -34,7 +34,13 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
-  if (!auth.ready) await auth.init()
+  if (!auth.ready) {
+    try {
+      await auth.init()
+    } catch {
+      auth.ready = true
+    }
+  }
 
   if (!isSupabaseConfigured) {
     if (to.meta.public) return { name: 'dashboard' }

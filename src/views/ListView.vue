@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Inbox, Pencil, Trash2 } from 'lucide-vue-next'
+import { CheckSquare, Inbox, Pencil, Trash2 } from 'lucide-vue-next'
 import CustomDatePicker from '@/components/CustomDatePicker.vue'
 import CustomSelect from '@/components/CustomSelect.vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -170,7 +170,18 @@ async function changeDueDate(task: Task, dueDate: string | null) {
           >
             <!-- Título y Descripción -->
             <td class="px-4 py-3 cursor-pointer truncate" @click="open(task.id)">
-              <p class="font-medium text-ink hover:text-accent transition truncate">{{ task.title }}</p>
+              <div class="flex items-center gap-2 min-w-0">
+                <p class="font-medium text-ink hover:text-accent transition truncate">{{ task.title }}</p>
+                <span
+                  v-if="task.subtaskCount"
+                  class="inline-flex items-center gap-1 text-[10px] font-medium text-muted bg-canvas px-1.5 py-0.5 rounded border border-line/50 shrink-0"
+                  :class="task.completedSubtaskCount === task.subtaskCount ? 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20 font-semibold' : ''"
+                  :title="t('drawer.subtasks')"
+                >
+                  <CheckSquare class="size-3" />
+                  {{ task.completedSubtaskCount ?? 0 }}/{{ task.subtaskCount }}
+                </span>
+              </div>
               <p v-if="task.description" class="mt-0.5 line-clamp-1 text-xs text-muted truncate">
                 {{ stripHtml(task.description) }}
               </p>

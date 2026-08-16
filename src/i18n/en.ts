@@ -232,6 +232,12 @@ export default {
   'drawer.assignee': 'Assigned to',
   'drawer.status': 'Status',
   'drawer.priority': 'Priority',
+  'drawer.subtasks': 'Subtasks',
+  'drawer.addSubtask': 'Add subtask',
+  'drawer.subtaskPlaceholder': 'Type a subtask and press Enter…',
+  'drawer.subtasksProgress': '{completed} of {total} completed ({percent}%)',
+  'drawer.noSubtasks': 'No subtasks yet. Add steps required for this task.',
+  'drawer.deleteSubtask': 'Delete subtask',
 
   // ── Project Modal ──
   'projectModal.title': 'New project',
@@ -258,6 +264,11 @@ export default {
   'activity.commented': 'commented',
   'activity.attachedFile': 'attached "{name}"',
   'activity.removedAttachment': 'removed attachment "{name}"',
+  'activity.addedSubtask': 'added subtask "{title}"',
+  'activity.completedSubtask': 'completed subtask "{title}"',
+  'activity.uncompletedSubtask': 'marked subtask "{title}" as pending',
+  'activity.deletedSubtask': 'deleted subtask "{title}"',
+  'activity.aSubtask': 'a subtask',
   'activity.updatedTask': 'updated the task',
   'activity.aFile': 'a file',
 

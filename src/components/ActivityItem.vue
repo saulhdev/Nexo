@@ -46,6 +46,10 @@ function text() {
   if (type === 'comment.added') return t('activity.commented')
   if (type === 'attachment.added') return t('activity.attachedFile', { name: String(meta.name || t('activity.aFile')) })
   if (type === 'attachment.removed') return t('activity.removedAttachment', { name: String(meta.name || t('activity.aFile')) })
+  if (type === 'subtask.added') return t('activity.addedSubtask', { title: String(meta.title || t('activity.aSubtask')) })
+  if (type === 'subtask.completed') return t('activity.completedSubtask', { title: String(meta.title || t('activity.aSubtask')) })
+  if (type === 'subtask.uncompleted') return t('activity.uncompletedSubtask', { title: String(meta.title || t('activity.aSubtask')) })
+  if (type === 'subtask.deleted') return t('activity.deletedSubtask', { title: String(meta.title || t('activity.aSubtask')) })
   return t('activity.updatedTask')
 }
 </script>

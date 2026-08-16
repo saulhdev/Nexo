@@ -6,12 +6,15 @@ import type {
   ActivityType,
   Comment,
   CreateProjectInput,
+  CreateSubtaskInput,
   CreateTaskInput,
   Project,
+  Subtask,
   Task,
   TaskAttachment,
   TaskFilters,
   UpdateProjectInput,
+  UpdateSubtaskInput,
   UpdateTaskInput,
   User,
 } from '@/types'
@@ -25,6 +28,7 @@ interface Db {
   users: User[]
   projects: Project[]
   tasks: Task[]
+  subtasks: Subtask[]
   comments: Comment[]
   attachments: TaskAttachment[]
   activities: Activity[]
@@ -88,7 +92,32 @@ function seed(): Db {
 
   const attachments: TaskAttachment[] = []
 
-  return { user, users, projects, tasks, comments, attachments, activities }
+  const subtasks: Subtask[] = [
+    st('st1', 't3', 'Crear componente de tabla para tareas', true, 0),
+    st('st2', 't3', 'Añadir filtros por proyecto y asignado', true, 1),
+    st('st3', 't3', 'Implementar búsqueda rápida', false, 2),
+    st('st4', 't4', 'Configurar columnas Kanban por estado', true, 0),
+    st('st5', 't4', 'Soportar reordenamiento mediante drag and drop', true, 1),
+    st('st6', 't4', 'Sincronizar cambios de estado con el backend', false, 2),
+    st('st7', 't5', 'Añadir pestaña de Comentarios', true, 0),
+    st('st8', 't5', 'Añadir pestaña de Archivos adjuntos', true, 1),
+    st('st9', 't5', 'Añadir sección de Subtareas', false, 2),
+  ]
+
+  return { user, users, projects, tasks, subtasks, comments, attachments, activities }
+
+  function st(id: string, taskId: string, title: string, completed: boolean, position: number): Subtask {
+    return {
+      id,
+      taskId,
+      userId: user.id,
+      title,
+      completed,
+      position,
+      createdAt,
+      updatedAt: createdAt,
+    }
+  }
 
   function t(
     id: string,
@@ -161,6 +190,7 @@ function load(): Db {
     if (raw) {
       const parsed = JSON.parse(raw) as Db
       if (!parsed.attachments) parsed.attachments = []
+      if (!parsed.subtasks) parsed.subtasks = []
       if (!parsed.users || !parsed.users.length) {
         parsed.users = [
           parsed.user,
@@ -187,12 +217,15 @@ function withProject(db: Db, task: Task): Task {
   const project = db.projects.find((p) => p.id === task.projectId)
   const assignee = task.assigneeId ? (db.users || []).find((u) => u.id === task.assigneeId) : undefined
   const defaultUi = getUrgencyImportanceFromPriority(task.priority)
+  const taskSubtasks = (db.subtasks || []).filter((st) => st.taskId === task.id)
   return {
     ...task,
     isUrgent: task.isUrgent ?? defaultUi.isUrgent,
     isImportant: task.isImportant ?? defaultUi.isImportant,
     project: project ? { id: project.id, name: project.name, color: project.color } : task.project,
     assignee: assignee ? { id: assignee.id, email: assignee.email, fullName: assignee.fullName, avatarUrl: assignee.avatarUrl } : undefined,
+    subtaskCount: taskSubtasks.length,
+    completedSubtaskCount: taskSubtasks.filter((st) => st.completed).length,
   }
 }
 
@@ -412,6 +445,7 @@ export function createLocalBackend(): Backend {
     async deleteTask(id: string) {
       const db = load()
       db.tasks = db.tasks.filter((item) => item.id !== id)
+      db.subtasks = (db.subtasks || []).filter((item) => item.taskId !== id)
       db.comments = db.comments.filter((item) => item.taskId !== id)
       db.attachments = (db.attachments || []).filter((item) => item.taskId !== id)
       db.activities = db.activities.filter((item) => item.taskId !== id)
@@ -427,6 +461,84 @@ export function createLocalBackend(): Backend {
         task.position = index
         task.updatedAt = nowISO()
       })
+      save(db)
+    },
+
+    async listSubtasks(taskId: string) {
+      return (load().subtasks || [])
+        .filter((item) => item.taskId === taskId)
+        .sort((a, b) => a.position - b.position || a.createdAt.localeCompare(b.createdAt))
+    },
+
+    async createSubtask(taskId: string, input: CreateSubtaskInput | string) {
+      const db = load()
+      const task = db.tasks.find((item) => item.id === taskId)
+      if (!task) throw new Error('Tarea no encontrada')
+      if (!db.subtasks) db.subtasks = []
+
+      const title = typeof input === 'string' ? input : input.title
+      const completed = typeof input === 'string' ? false : (input.completed ?? false)
+      const existing = db.subtasks.filter((st) => st.taskId === taskId)
+
+      const subtask: Subtask = {
+        id: crypto.randomUUID(),
+        taskId,
+        userId: db.user.id,
+        title: title.trim(),
+        completed,
+        position: existing.length,
+        createdAt: nowISO(),
+        updatedAt: nowISO(),
+      }
+      db.subtasks.push(subtask)
+      pushActivity(db, task, 'subtask.added', { title: subtask.title })
+      save(db)
+      return subtask
+    },
+
+    async updateSubtask(id: string, input: UpdateSubtaskInput) {
+      const db = load()
+      if (!db.subtasks) db.subtasks = []
+      const subtask = db.subtasks.find((st) => st.id === id)
+      if (!subtask) throw new Error('Subtarea no encontrada')
+
+      const task = db.tasks.find((t) => t.id === subtask.taskId)
+      const now = nowISO()
+
+      if (input.completed !== undefined && input.completed !== subtask.completed) {
+        subtask.completed = input.completed
+        if (task) {
+          pushActivity(db, task, input.completed ? 'subtask.completed' : 'subtask.uncompleted', {
+            title: subtask.title,
+          })
+        }
+      }
+
+      if (input.title !== undefined) {
+        subtask.title = input.title.trim()
+      }
+
+      if (input.position !== undefined) {
+        subtask.position = input.position
+      }
+
+      subtask.updatedAt = now
+      save(db)
+      return subtask
+    },
+
+    async deleteSubtask(id: string) {
+      const db = load()
+      if (!db.subtasks) db.subtasks = []
+      const subtask = db.subtasks.find((st) => st.id === id)
+      if (!subtask) return
+
+      const task = db.tasks.find((t) => t.id === subtask.taskId)
+      db.subtasks = db.subtasks.filter((st) => st.id !== id)
+
+      if (task) {
+        pushActivity(db, task, 'subtask.deleted', { title: subtask.title })
+      }
       save(db)
     },
 

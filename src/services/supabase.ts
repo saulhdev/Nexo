@@ -6,14 +6,17 @@ import type {
   ActivityType,
   Comment,
   CreateProjectInput,
+  CreateSubtaskInput,
   CreateTaskInput,
   Project,
+  Subtask,
   Task,
   TaskAttachment,
   TaskFilters,
   TaskPriority,
   TaskStatus,
   UpdateProjectInput,
+  UpdateSubtaskInput,
   UpdateTaskInput,
   User,
 } from '@/types'
@@ -73,6 +76,17 @@ interface AttachmentRow {
   created_at: string
 }
 
+interface SubtaskRow {
+  id: string
+  task_id: string
+  user_id: string
+  title: string
+  completed: boolean
+  position: number
+  created_at: string
+  updated_at?: string
+}
+
 interface ActivityRow {
   id: string
   task_id: string
@@ -102,8 +116,9 @@ function mapProject(row: ProjectRow): Project {
   }
 }
 
-function mapTask(row: TaskRow): Task {
+function mapTask(row: TaskRow & { subtasks?: Array<{ id: string; completed: boolean }> }): Task {
   const defaultUi = getUrgencyImportanceFromPriority(row.priority)
+  const subtasksList = row.subtasks || []
   return {
     id: row.id,
     projectId: row.project_id,
@@ -128,6 +143,21 @@ function mapTask(row: TaskRow): Task {
           fullName: row.assignee.full_name || row.assignee.email.split('@')[0],
         }
       : undefined,
+    subtaskCount: subtasksList.length,
+    completedSubtaskCount: subtasksList.filter((s) => s.completed).length,
+  }
+}
+
+function mapSubtask(row: SubtaskRow): Subtask {
+  return {
+    id: row.id,
+    taskId: row.task_id,
+    userId: row.user_id,
+    title: row.title,
+    completed: row.completed,
+    position: row.position,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   }
 }
 
@@ -262,17 +292,21 @@ export function createSupabaseBackend(): Backend {
     kind: 'supabase',
 
     async getSession() {
-      const supabase = getSupabase()
-      const { data } = await supabase.auth.getSession()
-      if (!data.session?.user) return null
       try {
-        return await loadProfile(data.session.user.id)
-      } catch {
-        return {
-          id: data.session.user.id,
-          email: data.session.user.email ?? '',
-          fullName: data.session.user.user_metadata?.full_name || 'Usuario',
+        const supabase = getSupabase()
+        const { data, error } = await supabase.auth.getSession()
+        if (error || !data.session?.user) return null
+        try {
+          return await loadProfile(data.session.user.id)
+        } catch {
+          return {
+            id: data.session.user.id,
+            email: data.session.user.email ?? '',
+            fullName: data.session.user.user_metadata?.full_name || 'Usuario',
+          }
         }
+      } catch {
+        return null
       }
     },
 
@@ -543,6 +577,104 @@ export function createSupabaseBackend(): Backend {
           supabase.from('tasks').update({ status, position: index, updated_at: new Date().toISOString() }).eq('id', id),
         ),
       )
+    },
+
+    async listSubtasks(taskId: string) {
+      const { data, error } = await getSupabase()
+        .from('subtasks')
+        .select('*')
+        .eq('task_id', taskId)
+        .order('position', { ascending: true })
+        .order('created_at', { ascending: true })
+      if (error) throw toError(error, 'No se pudieron obtener las subtareas')
+      return (data as SubtaskRow[]).map(mapSubtask)
+    },
+
+    async createSubtask(taskId: string, input: CreateSubtaskInput | string) {
+      const user = await requireUser()
+      const title = typeof input === 'string' ? input : input.title
+      const completed = typeof input === 'string' ? false : (input.completed ?? false)
+
+      const { data: existing } = await getSupabase()
+        .from('subtasks')
+        .select('position')
+        .eq('task_id', taskId)
+        .order('position', { ascending: false })
+        .limit(1)
+
+      const nextPosition = existing && existing.length > 0 ? (existing[0].position ?? 0) + 1 : 0
+
+      const { data, error } = await getSupabase()
+        .from('subtasks')
+        .insert({
+          task_id: taskId,
+          user_id: user.id,
+          title: title.trim(),
+          completed,
+          position: nextPosition,
+        })
+        .select('*')
+        .single()
+
+      if (error || !data) throw toError(error, 'No se pudo crear la subtarea')
+      const subtask = mapSubtask(data as SubtaskRow)
+      await writeActivity({ id: taskId, userId: user.id }, 'subtask.added', { title: subtask.title })
+      return subtask
+    },
+
+    async updateSubtask(id: string, input: UpdateSubtaskInput) {
+      const user = await requireUser()
+      const supabase = getSupabase()
+
+      const { data: current } = await supabase
+        .from('subtasks')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (!current) throw new Error('Subtarea no encontrada')
+
+      const updatePayload: Record<string, any> = { updated_at: new Date().toISOString() }
+      if (input.title !== undefined) updatePayload.title = input.title.trim()
+      if (input.completed !== undefined) updatePayload.completed = input.completed
+      if (input.position !== undefined) updatePayload.position = input.position
+
+      const { data, error } = await supabase
+        .from('subtasks')
+        .update(updatePayload)
+        .eq('id', id)
+        .select('*')
+        .single()
+
+      if (error || !data) throw toError(error, 'No se pudo actualizar la subtarea')
+      const subtask = mapSubtask(data as SubtaskRow)
+
+      if (input.completed !== undefined && input.completed !== current.completed) {
+        await writeActivity(
+          { id: current.task_id, userId: user.id },
+          input.completed ? 'subtask.completed' : 'subtask.uncompleted',
+          { title: subtask.title },
+        )
+      }
+      return subtask
+    },
+
+    async deleteSubtask(id: string) {
+      const user = await requireUser()
+      const supabase = getSupabase()
+
+      const { data: current } = await supabase
+        .from('subtasks')
+        .select('task_id, title')
+        .eq('id', id)
+        .maybeSingle()
+
+      const { error } = await supabase.from('subtasks').delete().eq('id', id)
+      if (error) throw toError(error, 'No se pudo eliminar la subtarea')
+
+      if (current) {
+        await writeActivity({ id: current.task_id, userId: user.id }, 'subtask.deleted', { title: current.title })
+      }
     },
 
     async listComments(taskId: string) {

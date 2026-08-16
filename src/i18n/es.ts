@@ -232,6 +232,12 @@ export default {
   'drawer.assignee': 'Asignado a',
   'drawer.status': 'Estado',
   'drawer.priority': 'Prioridad',
+  'drawer.subtasks': 'Subtareas',
+  'drawer.addSubtask': 'Añadir subtarea',
+  'drawer.subtaskPlaceholder': 'Escribe una subtarea y presiona Enter…',
+  'drawer.subtasksProgress': '{completed} de {total} completadas ({percent}%)',
+  'drawer.noSubtasks': 'Sin subtareas aún. Añade los pasos requeridos para esta tarea.',
+  'drawer.deleteSubtask': 'Eliminar subtarea',
 
   // ── Project Modal ──
   'projectModal.title': 'Nuevo proyecto',
@@ -258,6 +264,11 @@ export default {
   'activity.commented': 'comentó',
   'activity.attachedFile': 'adjuntó "{name}"',
   'activity.removedAttachment': 'eliminó el adjunto "{name}"',
+  'activity.addedSubtask': 'añadió la subtarea "{title}"',
+  'activity.completedSubtask': 'completó la subtarea "{title}"',
+  'activity.uncompletedSubtask': 'marcó la subtarea "{title}" como pendiente',
+  'activity.deletedSubtask': 'eliminó la subtarea "{title}"',
+  'activity.aSubtask': 'una subtarea',
   'activity.updatedTask': 'actualizó la tarea',
   'activity.aFile': 'un archivo',
 

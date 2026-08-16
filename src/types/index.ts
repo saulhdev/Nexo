@@ -12,6 +12,10 @@ export type ActivityType =
   | 'comment.added'
   | 'attachment.added'
   | 'attachment.removed'
+  | 'subtask.added'
+  | 'subtask.completed'
+  | 'subtask.uncompleted'
+  | 'subtask.deleted'
 
 export interface User {
   id: string
@@ -26,6 +30,28 @@ export interface Project {
   name: string
   color: string
   createdAt: string
+}
+
+export interface Subtask {
+  id: string
+  taskId: string
+  userId: string
+  title: string
+  completed: boolean
+  position: number
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface CreateSubtaskInput {
+  title: string
+  completed?: boolean
+}
+
+export interface UpdateSubtaskInput {
+  title?: string
+  completed?: boolean
+  position?: number
 }
 
 export interface Task {
@@ -46,6 +72,9 @@ export interface Task {
   updatedAt: string
   project?: Pick<Project, 'id' | 'name' | 'color'>
   assignee?: Pick<User, 'id' | 'email' | 'fullName' | 'avatarUrl'>
+  subtaskCount?: number
+  completedSubtaskCount?: number
+  subtasks?: Subtask[]
 }
 
 export interface Comment {

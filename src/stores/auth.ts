@@ -16,12 +16,18 @@ export const useAuthStore = defineStore('auth', () => {
   async function init() {
     try {
       user.value = await backend.getSession()
+    } catch {
+      user.value = null
     } finally {
       ready.value = true
     }
-    backend.onAuthChange((next) => {
-      user.value = next
-    })
+    try {
+      backend.onAuthChange((next) => {
+        user.value = next
+      })
+    } catch {
+      /* ignore auth change listener errors */
+    }
   }
 
   function getErrorMessage(err: unknown, fallback: string): string {

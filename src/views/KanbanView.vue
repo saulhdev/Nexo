@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Pencil, Plus } from 'lucide-vue-next'
+import { CheckSquare, Pencil, Plus } from 'lucide-vue-next'
 import draggable from 'vuedraggable'
 import PriorityBadge from '@/components/PriorityBadge.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
@@ -130,6 +130,15 @@ function getInitials(name?: string) {
                   {{ element.project?.name }}
                 </span>
                 <div class="flex items-center gap-2">
+                  <span
+                    v-if="element.subtaskCount"
+                    class="inline-flex items-center gap-1 text-[10px] font-medium text-muted bg-canvas px-1.5 py-0.5 rounded border border-line/50"
+                    :class="element.completedSubtaskCount === element.subtaskCount ? 'text-emerald-600 bg-emerald-500/10 border-emerald-500/20 font-semibold' : ''"
+                    :title="t('drawer.subtasks')"
+                  >
+                    <CheckSquare class="size-3" />
+                    {{ element.completedSubtaskCount ?? 0 }}/{{ element.subtaskCount }}
+                  </span>
                   <span
                     v-if="element.startDate || element.dueDate"
                     class="text-[11px]"

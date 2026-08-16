@@ -9,6 +9,7 @@ import type {
   CreateTaskInput,
   DashboardStats,
   Project,
+  Subtask,
   Task,
   TaskAttachment,
   TaskFilters,
@@ -23,6 +24,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const users = ref<User[]>([])
   const projects = ref<Project[]>([])
   const tasks = ref<Task[]>([])
+  const subtasks = ref<Subtask[]>([])
   const comments = ref<Comment[]>([])
   const attachments = ref<TaskAttachment[]>([])
   const activities = ref<Activity[]>([])
@@ -199,6 +201,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     tasks.value = tasks.value.filter((item) => item.id !== id)
     if (activeTaskId.value === id) {
       activeTaskId.value = null
+      subtasks.value = []
       comments.value = []
       attachments.value = []
       activities.value = []
@@ -234,28 +237,87 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
   function closeTask() {
     activeTaskId.value = null
+    subtasks.value = []
     comments.value = []
     attachments.value = []
     activities.value = []
   }
 
+  function updateTaskSubtaskCounts(taskId: string, list: Subtask[]) {
+    const taskIndex = tasks.value.findIndex((t) => t.id === taskId)
+    if (taskIndex >= 0) {
+      const current = tasks.value[taskIndex]
+      tasks.value[taskIndex] = {
+        ...current,
+        subtaskCount: list.length,
+        completedSubtaskCount: list.filter((st) => st.completed).length,
+      }
+    }
+  }
+
   async function loadDetail(id: string) {
     detailLoading.value = true
     try {
-      const [task, nextComments, nextAttachments, nextActivities] = await Promise.all([
+      const [task, nextSubtasks, nextComments, nextAttachments, nextActivities] = await Promise.all([
         backend.getTask(id),
+        backend.listSubtasks(id),
         backend.listComments(id),
         backend.listAttachments(id),
         backend.listActivities(id),
       ])
+      subtasks.value = nextSubtasks
       const index = tasks.value.findIndex((item) => item.id === id)
-      if (index >= 0) tasks.value[index] = task
+      if (index >= 0) {
+        tasks.value[index] = {
+          ...task,
+          subtaskCount: nextSubtasks.length,
+          completedSubtaskCount: nextSubtasks.filter((st) => st.completed).length,
+        }
+      }
       comments.value = nextComments
       attachments.value = nextAttachments
       activities.value = nextActivities
     } finally {
       detailLoading.value = false
     }
+  }
+
+  async function createSubtask(title: string) {
+    if (!activeTaskId.value || !title.trim()) return
+    const subtask = await backend.createSubtask(activeTaskId.value, title)
+    subtasks.value.push(subtask)
+    updateTaskSubtaskCounts(activeTaskId.value, subtasks.value)
+    activities.value = await backend.listActivities(activeTaskId.value)
+    await refreshRecent()
+    return subtask
+  }
+
+  async function toggleSubtask(subtask: Subtask) {
+    if (!activeTaskId.value) return
+    const updated = await backend.updateSubtask(subtask.id, { completed: !subtask.completed })
+    const idx = subtasks.value.findIndex((st) => st.id === subtask.id)
+    if (idx >= 0) subtasks.value[idx] = updated
+    updateTaskSubtaskCounts(activeTaskId.value, subtasks.value)
+    activities.value = await backend.listActivities(activeTaskId.value)
+    await refreshRecent()
+    return updated
+  }
+
+  async function updateSubtaskTitle(id: string, title: string) {
+    if (!activeTaskId.value) return
+    const updated = await backend.updateSubtask(id, { title })
+    const idx = subtasks.value.findIndex((st) => st.id === id)
+    if (idx >= 0) subtasks.value[idx] = updated
+    return updated
+  }
+
+  async function deleteSubtask(id: string) {
+    if (!activeTaskId.value) return
+    await backend.deleteSubtask(id)
+    subtasks.value = subtasks.value.filter((st) => st.id !== id)
+    updateTaskSubtaskCounts(activeTaskId.value, subtasks.value)
+    activities.value = await backend.listActivities(activeTaskId.value)
+    await refreshRecent()
   }
 
   async function addComment(body: string) {
@@ -310,6 +372,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     users,
     projects,
     tasks,
+    subtasks,
     comments,
     attachments,
     activities,
@@ -333,6 +396,10 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     moveInColumn,
     openTask,
     closeTask,
+    createSubtask,
+    toggleSubtask,
+    updateSubtaskTitle,
+    deleteSubtask,
     addComment,
     uploadAttachment,
     deleteAttachment,
