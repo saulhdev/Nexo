@@ -8,6 +8,7 @@ export type ActivityType =
   | 'priority.changed'
   | 'start_date.changed'
   | 'due_date.changed'
+  | 'assignee.changed'
   | 'comment.added'
   | 'attachment.added'
   | 'attachment.removed'
@@ -16,6 +17,7 @@ export interface User {
   id: string
   email: string
   fullName: string
+  avatarUrl?: string
 }
 
 export interface Project {
@@ -30,6 +32,7 @@ export interface Task {
   id: string
   projectId: string
   userId: string
+  assigneeId?: string | null
   title: string
   description: string
   status: TaskStatus
@@ -40,6 +43,7 @@ export interface Task {
   createdAt: string
   updatedAt: string
   project?: Pick<Project, 'id' | 'name' | 'color'>
+  assignee?: Pick<User, 'id' | 'email' | 'fullName' | 'avatarUrl'>
 }
 
 export interface Comment {
@@ -78,6 +82,7 @@ export interface TaskFilters {
   status?: TaskStatus | 'all'
   priority?: TaskPriority | 'all'
   projectId?: string | 'all'
+  assigneeId?: string | 'all' | 'unassigned'
 }
 
 export interface CreateTaskInput {
@@ -88,6 +93,7 @@ export interface CreateTaskInput {
   startDate?: string | null
   dueDate?: string | null
   projectId: string
+  assigneeId?: string | null
 }
 
 export interface UpdateTaskInput {
@@ -99,6 +105,7 @@ export interface UpdateTaskInput {
   dueDate?: string | null
   projectId?: string
   position?: number
+  assigneeId?: string | null
 }
 
 export interface CreateProjectInput {

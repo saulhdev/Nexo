@@ -19,6 +19,7 @@ export interface Backend {
   signOut(): Promise<void>
   updateProfile(input: { fullName?: string; password?: string }): Promise<User>
   onAuthChange(cb: (user: User | null) => void): () => void
+  listUsers(): Promise<User[]>
 
   listProjects(): Promise<Project[]>
   createProject(input: CreateProjectInput): Promise<Project>

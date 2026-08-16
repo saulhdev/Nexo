@@ -15,6 +15,17 @@ const composer = computed(() => workspace.projects[0])
 function open(id: string) {
   void workspace.openTask(id)
 }
+
+function getInitials(name?: string) {
+  if (!name) return '?'
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
 </script>
 
 <template>
@@ -24,7 +35,7 @@ function open(id: string) {
         <h1 class="text-3xl font-semibold tracking-tight">Lista</h1>
         <p class="mt-1 text-sm text-muted">
           {{ workspace.filteredTasks.length }} tareas
-          <span v-if="workspace.filters.projectId !== 'all'"> filtradas</span>
+          <span v-if="workspace.filters.projectId !== 'all' || workspace.filters.assigneeId !== 'all'"> filtradas</span>
         </p>
       </div>
       <TaskComposer v-if="composer" @created="open" />
@@ -63,6 +74,17 @@ function open(id: string) {
           {{ project.name }}
         </option>
       </select>
+      <select
+        :value="workspace.filters.assigneeId"
+        class="rounded-xl border border-line bg-surface px-3 py-2 text-sm"
+        @change="workspace.setFilter('assigneeId', ($event.target as HTMLSelectElement).value as never)"
+      >
+        <option value="all">Todos los asignados</option>
+        <option value="unassigned">Sin asignar</option>
+        <option v-for="user in workspace.users" :key="user.id" :value="user.id">
+          {{ user.fullName }}
+        </option>
+      </select>
     </div>
 
     <div class="mt-4 overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
@@ -70,6 +92,7 @@ function open(id: string) {
         <thead class="bg-canvas/80 text-[11px] uppercase tracking-wide text-muted">
           <tr>
             <th class="px-4 py-3 font-semibold">Tarea</th>
+            <th class="px-4 py-3 font-semibold">Asignado</th>
             <th class="px-4 py-3 font-semibold">Estado</th>
             <th class="px-4 py-3 font-semibold">Prioridad</th>
             <th class="px-4 py-3 font-semibold">Inicio</th>
@@ -89,6 +112,15 @@ function open(id: string) {
               <p v-if="task.description" class="mt-0.5 line-clamp-1 text-xs text-muted">
                 {{ task.description }}
               </p>
+            </td>
+            <td class="px-4 py-3">
+              <div v-if="task.assignee" class="inline-flex items-center gap-2" :title="task.assignee.fullName">
+                <span class="flex size-6 items-center justify-center rounded-full bg-accent/15 text-[11px] font-bold text-accent">
+                  {{ getInitials(task.assignee.fullName) }}
+                </span>
+                <span class="text-xs text-ink truncate max-w-[110px]">{{ task.assignee.fullName }}</span>
+              </div>
+              <span v-else class="text-xs text-muted/60 font-normal">Sin asignar</span>
             </td>
             <td class="px-4 py-3"><StatusBadge :status="task.status" /></td>
             <td class="px-4 py-3"><PriorityBadge :priority="task.priority" /></td>

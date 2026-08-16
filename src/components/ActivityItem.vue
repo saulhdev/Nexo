@@ -25,6 +25,10 @@ function text() {
   if (type === 'due_date.changed') {
     return `cambió la fecha de vencimiento a ${meta.to ? formatDate(String(meta.to)) : 'sin fecha'}`
   }
+  if (type === 'assignee.changed') {
+    if (!meta.toId && !meta.toName) return 'desasignó la tarea'
+    return `asignó la tarea a ${meta.toName || 'un usuario'}`
+  }
   if (type === 'comment.added') return 'comentó'
   if (type === 'attachment.added') return `adjuntó "${meta.name || 'un archivo'}"`
   if (type === 'attachment.removed') return `eliminó el adjunto "${meta.name || 'un archivo'}"`

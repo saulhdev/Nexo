@@ -19,6 +19,7 @@ const LOCAL_USER_ID = 'local-user'
 
 interface Db {
   user: User
+  users: User[]
   projects: Project[]
   tasks: Task[]
   comments: Comment[]
@@ -37,6 +38,13 @@ function seed(): Db {
     fullName: 'Tú',
   }
 
+  const users: User[] = [
+    user,
+    { id: 'user-ana', email: 'ana@nexo.local', fullName: 'Ana García' },
+    { id: 'user-carlos', email: 'carlos@nexo.local', fullName: 'Carlos Ruiz' },
+    { id: 'user-elena', email: 'elena@nexo.local', fullName: 'Elena Torres' },
+  ]
+
   const createdAt = nowISO()
   const projects: Project[] = [
     { id: 'proj-producto', userId: user.id, name: 'Producto', color: '#C45C26', createdAt },
@@ -45,18 +53,18 @@ function seed(): Db {
   ]
 
   const tasks: Task[] = [
-    t('t1', 'proj-producto', 'Definir alcance del MVP', 'Lista de vistas, campos de tarea y flujo de comentarios.', 'done', 'high', addDaysISO(-5), addDaysISO(-2), 0),
-    t('t2', 'proj-producto', 'Diseñar dashboard de estadísticas', 'Tarjetas de estado, vencidas y actividad reciente.', 'in_review', 'medium', addDaysISO(-2), addDaysISO(1), 0),
-    t('t3', 'proj-producto', 'Implementar vista de lista', 'Crear, filtrar y editar tareas desde una tabla.', 'in_progress', 'high', addDaysISO(-1), todayISO(), 0),
-    t('t4', 'proj-producto', 'Tablero kanban con arrastre', 'Mover tarjetas entre columnas actualiza el estado.', 'in_progress', 'urgent', todayISO(), addDaysISO(2), 1),
-    t('t5', 'proj-producto', 'Panel de detalle con actividad', 'Comentarios y bitácora con fecha en cada tarea.', 'todo', 'high', todayISO(), addDaysISO(3), 0),
-    t('t6', 'proj-ops', 'Conectar proyecto de Supabase', 'Auth, tablas y políticas RLS para datos reales.', 'todo', 'medium', addDaysISO(1), addDaysISO(5), 1),
-    t('t7', 'proj-ops', 'Revisar políticas de acceso', 'Cada usuario solo ve sus proyectos y tareas.', 'todo', 'low', addDaysISO(2), addDaysISO(8), 2),
-    t('t8', 'proj-ops', 'Preparar demo para el equipo', 'Datos de ejemplo y recorrido por las tres vistas.', 'todo', 'medium', addDaysISO(-4), addDaysISO(-1), 3),
-    t('t9', 'proj-personal', 'Actualizar portafolio', 'Añadir captura de Nexo cuando el MVP esté listo.', 'todo', 'low', addDaysISO(5), addDaysISO(12), 0),
-    t('t10', 'proj-producto', 'Ajustar vacíos y estados de error', 'Lista vacía, sin resultados y fallos de red.', 'in_review', 'medium', addDaysISO(1), addDaysISO(4), 1),
-    t('t11', 'proj-personal', 'Leer notas de Monday y Asana', 'Tomar ideas de densidad y de la línea de tiempo.', 'done', 'low', addDaysISO(-10), addDaysISO(-6), 1),
-    t('t12', 'proj-ops', 'Documentar cómo levantar el proyecto', 'README con modo local y pasos de Supabase.', 'done', 'medium', addDaysISO(-7), addDaysISO(-3), 0),
+    t('t1', 'proj-producto', 'Definir alcance del MVP', 'Lista de vistas, campos de tarea y flujo de comentarios.', 'done', 'high', addDaysISO(-5), addDaysISO(-2), 0, user.id),
+    t('t2', 'proj-producto', 'Diseñar dashboard de estadísticas', 'Tarjetas de estado, vencidas y actividad reciente.', 'in_review', 'medium', addDaysISO(-2), addDaysISO(1), 0, 'user-carlos'),
+    t('t3', 'proj-producto', 'Implementar vista de lista', 'Crear, filtrar y editar tareas desde una tabla.', 'in_progress', 'high', addDaysISO(-1), todayISO(), 0, 'user-ana'),
+    t('t4', 'proj-producto', 'Tablero kanban con arrastre', 'Mover tarjetas entre columnas actualiza el estado.', 'in_progress', 'urgent', todayISO(), addDaysISO(2), 1, user.id),
+    t('t5', 'proj-producto', 'Panel de detalle con actividad', 'Comentarios y bitácora con fecha en cada tarea.', 'todo', 'high', todayISO(), addDaysISO(3), 0, 'user-elena'),
+    t('t6', 'proj-ops', 'Conectar proyecto de Supabase', 'Auth, tablas y políticas RLS para datos reales.', 'todo', 'medium', addDaysISO(1), addDaysISO(5), 1, null),
+    t('t7', 'proj-ops', 'Revisar políticas de acceso', 'Cada usuario solo ve sus proyectos y tareas.', 'todo', 'low', addDaysISO(2), addDaysISO(8), 2, null),
+    t('t8', 'proj-ops', 'Preparar demo para el equipo', 'Datos de ejemplo y recorrido por las tres vistas.', 'todo', 'medium', addDaysISO(-4), addDaysISO(-1), 3, 'user-carlos'),
+    t('t9', 'proj-personal', 'Actualizar portafolio', 'Añadir captura de Nexo cuando el MVP esté listo.', 'todo', 'low', addDaysISO(5), addDaysISO(12), 0, user.id),
+    t('t10', 'proj-producto', 'Ajustar vacíos y estados de error', 'Lista vacía, sin resultados y fallos de red.', 'in_review', 'medium', addDaysISO(1), addDaysISO(4), 1, 'user-ana'),
+    t('t11', 'proj-personal', 'Leer notas de Monday y Asana', 'Tomar ideas de densidad y de la línea de tiempo.', 'done', 'low', addDaysISO(-10), addDaysISO(-6), 1, null),
+    t('t12', 'proj-ops', 'Documentar cómo levantar el proyecto', 'README con modo local y pasos de Supabase.', 'done', 'medium', addDaysISO(-7), addDaysISO(-3), 0, user.id),
   ]
 
   const comments: Comment[] = [
@@ -77,7 +85,7 @@ function seed(): Db {
 
   const attachments: TaskAttachment[] = []
 
-  return { user, projects, tasks, comments, attachments, activities }
+  return { user, users, projects, tasks, comments, attachments, activities }
 
   function t(
     id: string,
@@ -89,11 +97,13 @@ function seed(): Db {
     startDate: string | null,
     dueDate: string | null,
     position: number,
+    assigneeId: string | null = null,
   ): Task {
     return {
       id,
       projectId,
       userId: user.id,
+      assigneeId,
       title,
       description,
       status,
@@ -148,6 +158,14 @@ function load(): Db {
     if (raw) {
       const parsed = JSON.parse(raw) as Db
       if (!parsed.attachments) parsed.attachments = []
+      if (!parsed.users || !parsed.users.length) {
+        parsed.users = [
+          parsed.user,
+          { id: 'user-ana', email: 'ana@nexo.local', fullName: 'Ana García' },
+          { id: 'user-carlos', email: 'carlos@nexo.local', fullName: 'Carlos Ruiz' },
+          { id: 'user-elena', email: 'elena@nexo.local', fullName: 'Elena Torres' },
+        ]
+      }
       return parsed
     }
   } catch {
@@ -164,9 +182,12 @@ function save(db: Db) {
 
 function withProject(db: Db, task: Task): Task {
   const project = db.projects.find((p) => p.id === task.projectId)
-  return project
-    ? { ...task, project: { id: project.id, name: project.name, color: project.color } }
-    : task
+  const assignee = task.assigneeId ? (db.users || []).find((u) => u.id === task.assigneeId) : undefined
+  return {
+    ...task,
+    project: project ? { id: project.id, name: project.name, color: project.color } : task.project,
+    assignee: assignee ? { id: assignee.id, email: assignee.email, fullName: assignee.fullName, avatarUrl: assignee.avatarUrl } : undefined,
+  }
 }
 
 function matches(task: Task, filters?: TaskFilters, projectName = '') {
@@ -176,9 +197,16 @@ function matches(task: Task, filters?: TaskFilters, projectName = '') {
   if (filters.projectId && filters.projectId !== 'all' && task.projectId !== filters.projectId) {
     return false
   }
+  if (filters.assigneeId && filters.assigneeId !== 'all') {
+    if (filters.assigneeId === 'unassigned') {
+      if (task.assigneeId) return false
+    } else if (task.assigneeId !== filters.assigneeId) {
+      return false
+    }
+  }
   if (filters.search) {
     const q = filters.search.toLowerCase()
-    const hay = `${task.title} ${task.description} ${projectName}`.toLowerCase()
+    const hay = `${task.title} ${task.description} ${projectName} ${task.assignee?.fullName ?? ''}`.toLowerCase()
     if (!hay.includes(q)) return false
   }
   return true
@@ -239,6 +267,10 @@ export function createLocalBackend(): Backend {
       return () => listeners.delete(cb)
     },
 
+    async listUsers() {
+      return load().users || []
+    },
+
     async listProjects() {
       return load().projects
     },
@@ -260,11 +292,11 @@ export function createLocalBackend(): Backend {
     async listTasks(filters?: TaskFilters) {
       const db = load()
       return db.tasks
+        .map((task) => withProject(db, task))
         .filter((task) => {
           const project = db.projects.find((p) => p.id === task.projectId)
           return matches(task, filters, project?.name)
         })
-        .map((task) => withProject(db, task))
         .sort((a, b) => a.position - b.position || a.createdAt.localeCompare(b.createdAt))
     },
 
@@ -282,6 +314,7 @@ export function createLocalBackend(): Backend {
         id: crypto.randomUUID(),
         projectId: input.projectId,
         userId: db.user.id,
+        assigneeId: input.assigneeId ?? null,
         title: input.title.trim(),
         description: input.description?.trim() ?? '',
         status: input.status ?? 'todo',
@@ -294,6 +327,10 @@ export function createLocalBackend(): Backend {
       }
       db.tasks.push(task)
       pushActivity(db, task, 'task.created', { title: task.title })
+      if (task.assigneeId) {
+        const assignee = (db.users || []).find((u) => u.id === task.assigneeId)
+        pushActivity(db, task, 'assignee.changed', { toId: task.assigneeId, toName: assignee?.fullName ?? null })
+      }
       save(db)
       return withProject(db, task)
     },
@@ -326,6 +363,18 @@ export function createLocalBackend(): Backend {
       if (input.dueDate !== undefined && input.dueDate !== task.dueDate) {
         pushActivity(db, task, 'due_date.changed', { from: task.dueDate, to: input.dueDate })
         task.dueDate = input.dueDate
+      }
+      if (input.assigneeId !== undefined && input.assigneeId !== task.assigneeId) {
+        const users = db.users || []
+        const prevAssignee = users.find((u) => u.id === task.assigneeId)
+        const nextAssignee = input.assigneeId ? users.find((u) => u.id === input.assigneeId) : null
+        pushActivity(db, task, 'assignee.changed', {
+          fromId: task.assigneeId ?? null,
+          toId: input.assigneeId ?? null,
+          fromName: prevAssignee?.fullName ?? null,
+          toName: nextAssignee?.fullName ?? null,
+        })
+        task.assigneeId = input.assigneeId
       }
       if (input.projectId !== undefined) task.projectId = input.projectId
       if (input.position !== undefined) task.position = input.position

@@ -29,6 +29,17 @@ function onUpdateColumn(status: TaskStatus, newTasks: Task[]) {
 function open(id: string) {
   void workspace.openTask(id)
 }
+
+function getInitials(name?: string) {
+  if (!name) return '?'
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
 </script>
 
 <template>
@@ -94,17 +105,27 @@ function open(id: string) {
               <p v-if="element.description" class="mt-1 line-clamp-2 text-xs text-muted">
                 {{ element.description }}
               </p>
-              <div class="mt-3 flex items-center justify-between gap-2">
+              <div class="mt-3 flex items-center justify-between gap-2 border-t border-line/40 pt-2">
                 <span class="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted">
                   <span class="size-1.5 rounded-full" :style="{ background: element.project?.color }" />
                   {{ element.project?.name }}
                 </span>
-                <span
-                  class="text-[11px]"
-                  :class="isOverdue(element.dueDate, element.status) ? 'font-medium text-rose-600' : 'text-muted'"
-                >
-                  {{ formatDateRange(element.startDate, element.dueDate) }}
-                </span>
+                <div class="flex items-center gap-2">
+                  <span
+                    v-if="element.startDate || element.dueDate"
+                    class="text-[11px]"
+                    :class="isOverdue(element.dueDate, element.status) ? 'font-medium text-rose-600' : 'text-muted'"
+                  >
+                    {{ formatDateRange(element.startDate, element.dueDate) }}
+                  </span>
+                  <span
+                    v-if="element.assignee"
+                    class="flex size-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[10px] font-bold text-accent"
+                    :title="`Asignado a: ${element.assignee.fullName}`"
+                  >
+                    {{ getInitials(element.assignee.fullName) }}
+                  </span>
+                </div>
               </div>
             </article>
           </template>

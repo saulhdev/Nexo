@@ -14,10 +14,12 @@ import type {
   TaskFilters,
   TaskStatus,
   UpdateTaskInput,
+  User,
 } from '@/types'
 
 export const useWorkspaceStore = defineStore('workspace', () => {
   const backend = getBackend()
+  const users = ref<User[]>([])
   const projects = ref<Project[]>([])
   const tasks = ref<Task[]>([])
   const comments = ref<Comment[]>([])
@@ -34,6 +36,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     status: 'all',
     priority: 'all',
     projectId: 'all',
+    assigneeId: 'all',
   })
 
   const activeTask = computed(() => tasks.value.find((task) => task.id === activeTaskId.value) ?? null)
@@ -44,8 +47,15 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       if (filters.value.status !== 'all' && task.status !== filters.value.status) return false
       if (filters.value.priority !== 'all' && task.priority !== filters.value.priority) return false
       if (filters.value.projectId !== 'all' && task.projectId !== filters.value.projectId) return false
+      if (filters.value.assigneeId !== 'all') {
+        if (filters.value.assigneeId === 'unassigned') {
+          if (task.assigneeId) return false
+        } else if (task.assigneeId !== filters.value.assigneeId) {
+          return false
+        }
+      }
       if (q) {
-        const hay = `${task.title} ${task.description} ${task.project?.name ?? ''}`.toLowerCase()
+        const hay = `${task.title} ${task.description} ${task.project?.name ?? ''} ${task.assignee?.fullName ?? ''}`.toLowerCase()
         if (!hay.includes(q)) return false
       }
       return true
@@ -108,11 +118,13 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     loading.value = true
     error.value = ''
     try {
-      const [nextProjects, nextTasks, nextActivity] = await Promise.all([
+      const [nextUsers, nextProjects, nextTasks, nextActivity] = await Promise.all([
+        backend.listUsers(),
         backend.listProjects(),
         backend.listTasks(),
         backend.listRecentActivities(14),
       ])
+      users.value = nextUsers
       projects.value = nextProjects
       tasks.value = nextTasks
       recentActivities.value = nextActivity
@@ -268,6 +280,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   }
 
   return {
+    users,
     projects,
     tasks,
     comments,

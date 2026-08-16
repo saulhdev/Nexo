@@ -34,6 +34,7 @@ interface TaskRow {
   id: string
   project_id: string
   user_id: string
+  assignee_id?: string | null
   title: string
   description: string
   status: TaskStatus
@@ -44,6 +45,7 @@ interface TaskRow {
   created_at: string
   updated_at: string
   project?: { id: string; name: string; color: string } | null
+  assignee?: { id: string; email: string; full_name: string | null } | null
 }
 
 interface CommentRow {
@@ -100,6 +102,7 @@ function mapTask(row: TaskRow): Task {
     id: row.id,
     projectId: row.project_id,
     userId: row.user_id,
+    assigneeId: row.assignee_id ?? null,
     title: row.title,
     description: row.description,
     status: row.status,
@@ -110,6 +113,13 @@ function mapTask(row: TaskRow): Task {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     project: row.project ?? undefined,
+    assignee: row.assignee
+      ? {
+          id: row.assignee.id,
+          email: row.assignee.email,
+          fullName: row.assignee.full_name || row.assignee.email.split('@')[0],
+        }
+      : undefined,
   }
 }
 
@@ -331,6 +341,15 @@ export function createSupabaseBackend(): Backend {
       return () => data.subscription.unsubscribe()
     },
 
+    async listUsers() {
+      const { data, error } = await getSupabase()
+        .from('profiles')
+        .select('id, email, full_name')
+        .order('full_name', { ascending: true })
+      if (error) throw toError(error, 'No se pudieron obtener los usuarios')
+      return (data as ProfileRow[]).map(mapUser)
+    },
+
     async listProjects() {
       const { data, error } = await getSupabase()
         .from('projects')
@@ -359,7 +378,7 @@ export function createSupabaseBackend(): Backend {
     async listTasks(filters?: TaskFilters) {
       let query = getSupabase()
         .from('tasks')
-        .select('*, project:projects(id, name, color)')
+        .select('*, project:projects(id, name, color), assignee:profiles!assignee_id(id, email, full_name)')
         .order('position', { ascending: true })
         .order('created_at', { ascending: true })
 
@@ -367,6 +386,13 @@ export function createSupabaseBackend(): Backend {
       if (filters?.priority && filters.priority !== 'all') query = query.eq('priority', filters.priority)
       if (filters?.projectId && filters.projectId !== 'all') {
         query = query.eq('project_id', filters.projectId)
+      }
+      if (filters?.assigneeId && filters.assigneeId !== 'all') {
+        if (filters.assigneeId === 'unassigned') {
+          query = query.is('assignee_id', null)
+        } else {
+          query = query.eq('assignee_id', filters.assigneeId)
+        }
       }
       if (filters?.search) query = query.ilike('title', `%${filters.search}%`)
 
@@ -378,7 +404,7 @@ export function createSupabaseBackend(): Backend {
     async getTask(id: string) {
       const { data, error } = await getSupabase()
         .from('tasks')
-        .select('*, project:projects(id, name, color)')
+        .select('*, project:projects(id, name, color), assignee:profiles!assignee_id(id, email, full_name)')
         .eq('id', id)
         .single()
       if (error || !data) throw toError(error, 'Tarea no encontrada')
@@ -402,6 +428,7 @@ export function createSupabaseBackend(): Backend {
         .insert({
           project_id: input.projectId,
           user_id: user.id,
+          assignee_id: input.assigneeId ?? null,
           title: input.title.trim(),
           description: input.description?.trim() ?? '',
           status,
@@ -410,11 +437,14 @@ export function createSupabaseBackend(): Backend {
           due_date: input.dueDate ?? null,
           position: (last?.position ?? -1) + 1,
         })
-        .select('*, project:projects(id, name, color)')
+        .select('*, project:projects(id, name, color), assignee:profiles!assignee_id(id, email, full_name)')
         .single()
       if (error || !data) throw toError(error, 'No se pudo crear la tarea')
       const task = mapTask(data as TaskRow)
       await writeActivity(task, 'task.created', { title: task.title })
+      if (task.assigneeId) {
+        await writeActivity(task, 'assignee.changed', { toId: task.assigneeId, toName: task.assignee?.fullName ?? null })
+      }
       return task
     },
 
@@ -429,12 +459,13 @@ export function createSupabaseBackend(): Backend {
       if (input.dueDate !== undefined) patch.due_date = input.dueDate
       if (input.projectId !== undefined) patch.project_id = input.projectId
       if (input.position !== undefined) patch.position = input.position
+      if (input.assigneeId !== undefined) patch.assignee_id = input.assigneeId
 
       const { data, error } = await getSupabase()
         .from('tasks')
         .update(patch)
         .eq('id', id)
-        .select('*, project:projects(id, name, color)')
+        .select('*, project:projects(id, name, color), assignee:profiles!assignee_id(id, email, full_name)')
         .single()
       if (error || !data) throw error ?? new Error('No se pudo actualizar la tarea')
       const task = mapTask(data as TaskRow)
@@ -456,6 +487,14 @@ export function createSupabaseBackend(): Backend {
       }
       if (input.dueDate !== undefined && input.dueDate !== current.dueDate) {
         await writeActivity(task, 'due_date.changed', { from: current.dueDate, to: task.dueDate })
+      }
+      if (input.assigneeId !== undefined && input.assigneeId !== current.assigneeId) {
+        await writeActivity(task, 'assignee.changed', {
+          fromId: current.assigneeId ?? null,
+          toId: task.assigneeId ?? null,
+          fromName: current.assignee?.fullName ?? null,
+          toName: task.assignee?.fullName ?? null,
+        })
       }
       return task
     },

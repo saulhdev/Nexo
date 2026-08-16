@@ -156,11 +156,20 @@ function close() {
               @change="persist({ dueDate: ($event.target as HTMLInputElement).value || null })"
             />
           </label>
-          <label class="field-label col-span-2">
+          <label class="field-label">
             Proyecto
             <select :value="task.projectId" class="field" @change="persist({ projectId: ($event.target as HTMLSelectElement).value })">
               <option v-for="project in workspace.projects" :key="project.id" :value="project.id">
                 {{ project.name }}
+              </option>
+            </select>
+          </label>
+          <label class="field-label">
+            Asignado a
+            <select :value="task.assigneeId ?? ''" class="field" @change="persist({ assigneeId: ($event.target as HTMLSelectElement).value || null })">
+              <option value="">Sin asignar</option>
+              <option v-for="user in workspace.users" :key="user.id" :value="user.id">
+                {{ user.fullName }}
               </option>
             </select>
           </label>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { Calendar, ChevronDown, FileText, Flag, Folder, ListTodo, Paperclip, X } from 'lucide-vue-next'
+import { Calendar, ChevronDown, FileText, Flag, Folder, ListTodo, Paperclip, UserCheck, X } from 'lucide-vue-next'
 import { PRIORITIES, STATUSES } from '@/constants'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { TaskPriority, TaskStatus } from '@/types'
@@ -31,6 +31,7 @@ const form = reactive({
   startDate: '',
   dueDate: '',
   projectId: '',
+  assigneeId: '',
 })
 
 const canSubmit = computed(() => form.title.trim().length > 0 && Boolean(form.projectId))
@@ -82,6 +83,7 @@ function reset() {
   form.startDate = ''
   form.dueDate = ''
   form.projectId = workspace.projects[0]?.id ?? ''
+  form.assigneeId = ''
   pendingFiles.value.forEach((item) => {
     if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
   })
@@ -105,6 +107,7 @@ async function submit() {
       startDate: form.startDate || null,
       dueDate: form.dueDate || null,
       projectId: form.projectId,
+      assigneeId: form.assigneeId || null,
     })
 
     if (pendingFiles.value.length > 0) {
@@ -187,7 +190,7 @@ defineExpose({ start })
                 />
               </div>
 
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
                   <label class="block text-xs font-semibold uppercase tracking-wider text-muted">Proyecto</label>
                   <div class="relative mt-1.5">
@@ -199,6 +202,23 @@ defineExpose({ start })
                       <option disabled value="">Seleccionar proyecto</option>
                       <option v-for="project in workspace.projects" :key="project.id" :value="project.id">
                         {{ project.name }}
+                      </option>
+                    </select>
+                    <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">Asignado a</label>
+                  <div class="relative mt-1.5">
+                    <UserCheck class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
+                    <select
+                      v-model="form.assigneeId"
+                      class="field-input pl-10 pr-9"
+                    >
+                      <option value="">Sin asignar</option>
+                      <option v-for="user in workspace.users" :key="user.id" :value="user.id">
+                        {{ user.fullName }}
                       </option>
                     </select>
                     <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
