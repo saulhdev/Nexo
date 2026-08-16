@@ -9,6 +9,7 @@ import TaskComposer from '@/components/TaskComposer.vue'
 import { EISENHOWER_QUADRANTS, type EisenhowerQuadrant, getQuadrantFromTask, STATUSES } from '@/constants'
 import { useI18n } from '@/i18n'
 import { formatDateRange, isOverdue } from '@/lib/dates'
+import { stripHtml } from '@/lib/text'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Task, TaskStatus } from '@/types'
 
@@ -200,7 +201,7 @@ function getInitials(name?: string) {
               </div>
 
               <p v-if="element.description" class="mt-1.5 line-clamp-2 text-xs text-muted">
-                {{ element.description }}
+                {{ stripHtml(element.description) }}
               </p>
 
               <div class="mt-3.5 flex items-center justify-between gap-2 border-t border-line/40 pt-2.5 text-xs">

@@ -7,6 +7,7 @@ import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImport
 import { useI18n } from '@/i18n'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Task, TaskPriority, TaskStatus } from '@/types'
+import RichTextEditor from '@/components/RichTextEditor.vue'
 
 
 const { t } = useI18n()
@@ -293,11 +294,11 @@ defineExpose({ start, editTask })
 
               <div>
                 <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.description') }}</label>
-                <textarea
+                <RichTextEditor
                   v-model="form.description"
-                  rows="3"
-                  class="mt-1.5 w-full resize-none rounded-xl border border-line bg-canvas px-4 py-2.5 text-sm text-ink outline-none focus:border-accent transition"
                   :placeholder="t('composer.descriptionPlaceholder')"
+                  minHeight="110px"
+                  class="mt-1.5"
                 />
               </div>
 

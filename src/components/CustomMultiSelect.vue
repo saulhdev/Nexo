@@ -8,7 +8,6 @@
       :optionValue="resolveOptionValue"
       :placeholder="placeholder"
       :appendTo="appendTo"
-      :overlayStyle="multiselectOverlayStyle"
       :showClear="showClear"
       :filter="filter"
       :maxSelectedLabels="maxSelectedLabels"
@@ -103,10 +102,6 @@ const emit = defineEmits<{
 const controlId = computed(() => props.id)
 const isLoading = ref(false)
 const remoteOptions = ref<any[]>([])
-
-const multiselectOverlayStyle = {
-  zIndex: 10650,
-}
 
 const sizeClass = computed(() => {
   if (props.size === 'small') return 'p-multiselect-sm'

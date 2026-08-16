@@ -9,6 +9,8 @@ import { formatDateTime } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { TaskPriority } from '@/types'
 import ActivityItem from '@/components/ActivityItem.vue'
+import RichTextEditor from '@/components/RichTextEditor.vue'
+import RichTextViewer from '@/components/RichTextViewer.vue'
 
 const { t } = useI18n()
 const workspace = useWorkspaceStore()
@@ -275,11 +277,11 @@ function close() {
         <div class="flex-1 overflow-y-auto scrollbar-thin">
           <section class="px-5 py-4">
             <p class="text-xs font-semibold uppercase tracking-wide text-muted">{{ t('drawer.description') }}</p>
-            <textarea
+            <RichTextEditor
               v-model="description"
-              rows="4"
-              class="mt-2 w-full resize-y rounded-xl border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-accent"
               :placeholder="t('drawer.descriptionPlaceholder')"
+              minHeight="110px"
+              class="mt-2"
               @blur="saveDescription"
             />
             <p class="mt-2 text-[11px] text-muted">
@@ -319,34 +321,36 @@ function close() {
               <article
                 v-for="comment in workspace.comments"
                 :key="comment.id"
-                class="rounded-xl bg-canvas px-3 py-2.5"
+                class="rounded-xl bg-canvas px-3.5 py-3 border border-line/60 shadow-2xs"
               >
-                <div class="flex items-baseline justify-between gap-3">
-                  <p class="text-sm font-medium">{{ comment.authorName || t('common.you') }}</p>
+                <div class="flex items-baseline justify-between gap-3 border-b border-line/40 pb-1.5 mb-2">
+                  <p class="text-sm font-semibold text-ink">{{ comment.authorName || t('common.you') }}</p>
                   <p class="text-[11px] text-muted">{{ formatDateTime(comment.createdAt) }}</p>
                 </div>
-                <p class="mt-1 whitespace-pre-wrap text-sm text-ink/90">{{ comment.body }}</p>
+                <RichTextViewer :content="comment.body" />
               </article>
               <p v-if="!workspace.comments.length" class="text-sm text-muted">
                 {{ t('drawer.noComments') }}
               </p>
-              <form class="rounded-xl border border-line p-2" @submit.prevent="submitComment">
-                <textarea
+              <div class="space-y-2 pt-1">
+                <RichTextEditor
                   v-model="draft"
-                  rows="3"
-                  class="w-full resize-none bg-transparent px-2 py-1 text-sm outline-none"
                   :placeholder="t('drawer.commentPlaceholder')"
+                  minHeight="80px"
+                  @submit="submitComment"
                 />
-                <div class="flex justify-end">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] text-muted">Ctrl + Enter para publicar</span>
                   <button
-                    type="submit"
-                    class="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-40"
+                    type="button"
+                    class="rounded-lg bg-accent px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-40 transition cursor-pointer"
                     :disabled="!draft.trim()"
+                    @click="submitComment"
                   >
                     {{ t('drawer.publish') }}
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
 
             <!-- TAB ADJUNTOS -->

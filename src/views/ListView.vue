@@ -8,6 +8,7 @@ import TaskComposer from '@/components/TaskComposer.vue'
 import { getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
 import { useI18n } from '@/i18n'
 import { isOverdue } from '@/lib/dates'
+import { stripHtml } from '@/lib/text'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Task, TaskPriority, TaskStatus } from '@/types'
 
@@ -171,7 +172,7 @@ async function changeDueDate(task: Task, dueDate: string | null) {
             <td class="px-4 py-3 cursor-pointer truncate" @click="open(task.id)">
               <p class="font-medium text-ink hover:text-accent transition truncate">{{ task.title }}</p>
               <p v-if="task.description" class="mt-0.5 line-clamp-1 text-xs text-muted truncate">
-                {{ task.description }}
+                {{ stripHtml(task.description) }}
               </p>
             </td>
 
