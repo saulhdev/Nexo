@@ -1,7 +1,7 @@
 import { t } from '@/i18n'
 import type { TaskPriority, TaskStatus } from '@/types'
 
-export const APP_NAME = 'Nexo'
+export const APP_NAME = 'Nexo App'
 
 export interface StatusDef {
   id: TaskStatus

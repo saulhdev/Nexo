@@ -20,6 +20,10 @@ export default {
   'common.newProject': 'New project',
   'common.editProject': 'Edit project',
   'common.language': 'Language',
+  'common.notifications': 'Notifications',
+  'common.noNotifications': 'No new notifications',
+  'common.markAllAsRead': 'Mark all as read',
+  'common.copyright': '© {year} Nexo. All rights reserved.',
 
   // ── Nav ──
   'nav.dashboard': 'Dashboard',

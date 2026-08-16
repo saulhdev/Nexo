@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
 import ProjectModal from '@/components/ProjectModal.vue'
 import TaskDrawer from '@/components/TaskDrawer.vue'
+import NotificationPopover from '@/components/NotificationPopover.vue'
 import type { Project } from '@/types'
 
 const { t, locale, setLocale } = useI18n()
@@ -17,6 +18,7 @@ const auth = useAuthStore()
 const workspace = useWorkspaceStore()
 const projectOpen = ref(false)
 const projectToEdit = ref<Project | null>(null)
+const currentYear = new Date().getFullYear()
 
 function openNewProject() {
   projectToEdit.value = null
@@ -88,7 +90,8 @@ function filterProject(id: string) {
 
 <template>
   <div class="flex min-h-screen bg-canvas">
-    <aside class="flex w-64 shrink-0 flex-col bg-sidebar text-[#f3efe6]">
+    <!-- Sidebar: Fixed / Sticky sidebar -->
+    <aside class="sticky top-0 flex h-screen w-64 shrink-0 flex-col bg-sidebar text-[#f3efe6] overflow-y-auto scrollbar-thin">
       <div class="flex items-center gap-2.5 px-5 py-5">
         <span class="grid size-8 place-items-center rounded-xl bg-accent text-sm font-bold text-white">N</span>
         <div>
@@ -151,47 +154,71 @@ function filterProject(id: string) {
       </div>
 
       <div class="mt-auto border-t border-sidebar-line p-4">
-        <!-- Language toggle -->
-        <button
-          class="mb-3 flex w-full items-center justify-between rounded-xl bg-white/5 px-3 py-2 text-[11px] leading-relaxed text-white/55 transition hover:bg-white/10 hover:text-white/80"
-          @click="toggleLocale"
-        >
-          <span class="flex items-center gap-2">
-            <Globe class="size-3.5" />
-            {{ t('common.language') }}
-          </span>
-          <span class="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/70">
-            {{ locale === 'es' ? 'ES 🇪🇸' : 'EN 🇺🇸' }}
-          </span>
-        </button>
-
-        <div v-if="auth.isLocal" class="mb-3 rounded-xl bg-white/5 px-3 py-2 text-[11px] leading-relaxed text-white/55">
+        <div v-if="auth.isLocal" class="rounded-xl bg-white/5 px-3 py-2 text-[11px] leading-relaxed text-white/55">
           {{ t('common.localMode') }}
-        </div>
-        <div class="flex items-center gap-2">
-          <RouterLink :to="{ name: 'profile' }" class="flex min-w-0 flex-1 items-center gap-2 rounded-xl p-1 text-left transition hover:bg-white/5">
-            <div class="grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-xs font-semibold">
-              {{ initials }}
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-medium">{{ auth.user?.fullName }}</p>
-              <p class="truncate text-[11px] text-white/40">{{ auth.user?.email }}</p>
-            </div>
-          </RouterLink>
-          <button v-if="!auth.isLocal" class="p-1 text-white/50 hover:text-white" :title="t('common.logout')" @click="logout">
-            <LogOut class="size-4" />
-          </button>
         </div>
       </div>
     </aside>
 
-    <div class="flex min-w-0 flex-1 flex-col">
+    <!-- Main Section with Top Header, Router View and Footer -->
+    <div class="flex min-w-0 flex-1 flex-col min-h-screen">
+      <!-- Top Header Bar -->
+      <header class="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-surface/80 px-6 py-3.5 backdrop-blur-md">
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-semibold text-ink">
+            {{ route.meta?.titleKey ? t(route.meta.titleKey as string) : APP_NAME }}
+          </span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <!-- Language selector toggle -->
+          <button
+            class="flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink/80 transition hover:bg-canvas"
+            :title="t('common.language')"
+            @click="toggleLocale"
+          >
+            <Globe class="size-3.5 text-muted" />
+            <span>{{ locale === 'es' ? 'ES 🇪🇸' : 'EN 🇺🇸' }}</span>
+          </button>
+
+          <!-- Notifications popover -->
+          <NotificationPopover />
+
+          <!-- User profile link -->
+          <RouterLink
+            :to="{ name: 'profile' }"
+            class="flex items-center gap-2 rounded-xl border border-line bg-surface px-2.5 py-1 text-ink transition hover:bg-canvas"
+          >
+            <div class="grid size-7 place-items-center rounded-full bg-accent/15 text-xs font-bold text-accent">
+              {{ initials }}
+            </div>
+            <span class="hidden sm:inline text-xs font-medium text-ink">{{ auth.user?.fullName || t('common.you') }}</span>
+          </RouterLink>
+
+          <!-- Logout button -->
+          <button
+            class="grid size-9 place-items-center rounded-xl border border-line bg-surface text-ink/70 transition hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200"
+            :title="t('common.logout')"
+            @click="logout"
+          >
+            <LogOut class="size-4" />
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Content -->
       <main class="flex-1 p-6 lg:p-8">
         <p v-if="workspace.error" class="mb-4 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-700">
           {{ workspace.error }}
         </p>
         <RouterView />
       </main>
+
+      <!-- Footer -->
+      <footer class="mt-auto border-t border-line py-4 px-6 text-center md:flex md:items-center md:justify-between text-xs text-muted">
+        <p>{{ t('common.copyright', { year: currentYear }) }}</p>
+        <p class="mt-1 md:mt-0 font-medium text-ink/50">{{ APP_NAME }} • v1.0.0</p>
+      </footer>
     </div>
 
     <TaskDrawer />
