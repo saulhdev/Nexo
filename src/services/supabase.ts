@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase'
+import { stripHtml } from '@/lib/text'
 import { getUrgencyImportanceFromPriority } from '@/constants'
 import type {
   Activity,
@@ -548,7 +549,7 @@ export function createSupabaseBackend(): Backend {
       if (error || !data) throw error ?? new Error('No se pudo publicar el comentario')
       const comment = mapComment(data as CommentRow)
       await writeActivity({ id: taskId, userId: user.id }, 'comment.added', {
-        preview: comment.body.slice(0, 140),
+        preview: stripHtml(comment.body).slice(0, 140),
       })
       return comment
     },

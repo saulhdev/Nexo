@@ -2,6 +2,7 @@
 import { PRIORITY_LABEL, STATUS_LABEL } from '@/constants'
 import { useI18n } from '@/i18n'
 import { formatDate, formatDateTime } from '@/lib/dates'
+import { stripHtml } from '@/lib/text'
 import type { Activity, TaskPriority, TaskStatus } from '@/types'
 
 const { t } = useI18n()
@@ -59,7 +60,7 @@ function text() {
         <span v-if="showTask && item.taskTitle" class="text-muted"> · {{ item.taskTitle }}</span>
       </p>
       <p v-if="item.type === 'comment.added' && item.meta.preview" class="mt-1 text-sm text-muted">
-        “{{ item.meta.preview }}”
+        “{{ stripHtml(item.meta.preview) }}”
       </p>
       <p class="mt-0.5 text-xs text-muted">{{ formatDateTime(item.createdAt) }}</p>
     </div>

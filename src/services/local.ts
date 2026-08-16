@@ -1,4 +1,5 @@
 import { addDaysISO, todayISO } from '@/lib/dates'
+import { stripHtml } from '@/lib/text'
 import { getUrgencyImportanceFromPriority } from '@/constants'
 import type {
   Activity,
@@ -437,7 +438,7 @@ export function createLocalBackend(): Backend {
         authorName: db.user.fullName,
       }
       db.comments.push(comment)
-      pushActivity(db, task, 'comment.added', { preview: comment.body.slice(0, 140) })
+      pushActivity(db, task, 'comment.added', { preview: stripHtml(comment.body).slice(0, 140) })
       save(db)
       return comment
     },

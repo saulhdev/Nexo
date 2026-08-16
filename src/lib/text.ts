@@ -1,8 +1,8 @@
 /**
  * Utility to strip HTML tags and decode basic entities for plain text previews
  */
-export function stripHtml(html?: string | null): string {
-  if (!html) return ''
+export function stripHtml(html?: unknown): string {
+  if (typeof html !== 'string' || !html) return ''
   // Replace block tags with spaces to keep separation
   const formatted = html
     .replace(/<\/(p|div|h[1-6]|li|blockquote|pre)>/gi, ' ')
