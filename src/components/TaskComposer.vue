@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { Calendar, ChevronDown, Flag, Folder, ListTodo, X } from 'lucide-vue-next'
+import { Calendar, ChevronDown, FileText, Flag, Folder, ListTodo, Paperclip, X } from 'lucide-vue-next'
 import { PRIORITIES, STATUSES } from '@/constants'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { TaskPriority, TaskStatus } from '@/types'
@@ -19,6 +19,9 @@ const emit = defineEmits<{ created: [id: string]; cancel: [] }>()
 const workspace = useWorkspaceStore()
 const open = ref(props.autoOpen)
 const submitting = ref(false)
+
+const pendingFiles = ref<{ file: File; previewUrl?: string }[]>([])
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const form = reactive({
   title: '',
@@ -39,6 +42,38 @@ watch(
   },
 )
 
+function triggerFileSelect() {
+  fileInputRef.value?.click()
+}
+
+function onFilesSelected(e: Event) {
+  const target = e.target as HTMLInputElement
+  if (!target.files?.length) return
+  for (let i = 0; i < target.files.length; i++) {
+    const file = target.files[i]
+    const isImage = file.type.startsWith('image/')
+    pendingFiles.value.push({
+      file,
+      previewUrl: isImage ? URL.createObjectURL(file) : undefined,
+    })
+  }
+  target.value = ''
+}
+
+function removePendingFile(index: number) {
+  const removed = pendingFiles.value[index]
+  if (removed?.previewUrl) {
+    URL.revokeObjectURL(removed.previewUrl)
+  }
+  pendingFiles.value.splice(index, 1)
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 function reset() {
   form.title = ''
   form.description = ''
@@ -47,6 +82,10 @@ function reset() {
   form.startDate = ''
   form.dueDate = ''
   form.projectId = workspace.projects[0]?.id ?? ''
+  pendingFiles.value.forEach((item) => {
+    if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
+  })
+  pendingFiles.value = []
 }
 
 function start() {
@@ -67,6 +106,13 @@ async function submit() {
       dueDate: form.dueDate || null,
       projectId: form.projectId,
     })
+
+    if (pendingFiles.value.length > 0) {
+      for (const item of pendingFiles.value) {
+        await workspace.uploadAttachment(item.file, task.id)
+      }
+    }
+
     reset()
     open.value = false
     emit('created', task.id)
@@ -219,10 +265,59 @@ defineExpose({ start })
                 </div>
               </div>
 
+              <!-- SECCIÓN ARCHIVOS ADJUNTOS -->
+              <div>
+                <div class="flex items-center justify-between">
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">Archivos adjuntos</label>
+                  <input
+                    ref="fileInputRef"
+                    type="file"
+                    multiple
+                    class="hidden"
+                    @change="onFilesSelected"
+                  />
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline cursor-pointer"
+                    @click="triggerFileSelect"
+                  >
+                    <Paperclip class="size-3.5" />
+                    Adjuntar archivos
+                  </button>
+                </div>
+
+                <div v-if="pendingFiles.length" class="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  <div
+                    v-for="(item, idx) in pendingFiles"
+                    :key="idx"
+                    class="group relative flex items-center gap-2.5 rounded-xl border border-line bg-canvas p-2.5 text-xs"
+                  >
+                    <div v-if="item.previewUrl" class="size-9 shrink-0 overflow-hidden rounded-lg bg-line/50">
+                      <img :src="item.previewUrl" :alt="item.file.name" class="size-full object-cover" />
+                    </div>
+                    <div v-else class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                      <FileText class="size-4" />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate font-medium text-ink" :title="item.file.name">{{ item.file.name }}</p>
+                      <p class="text-[10px] text-muted">{{ formatFileSize(item.file.size) }}</p>
+                    </div>
+                    <button
+                      type="button"
+                      class="rounded-md p-1 text-muted hover:bg-rose-500/10 hover:text-rose-600 cursor-pointer"
+                      title="Quitar archivo"
+                      @click="removePendingFile(idx)"
+                    >
+                      <X class="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div class="mt-6 flex justify-end gap-3 border-t border-line pt-4">
                 <button type="button" class="ghost cursor-pointer" @click="cancel">Cancelar</button>
                 <button type="submit" class="primary cursor-pointer" :disabled="!canSubmit || submitting">
-                  {{ submitting ? 'Creando…' : 'Crear tarea' }}
+                  {{ submitting ? (pendingFiles.length ? 'Subiendo archivos…' : 'Creando…') : 'Crear tarea' }}
                 </button>
               </div>
             </form>

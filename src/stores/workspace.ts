@@ -227,8 +227,9 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     await refreshRecent()
   }
 
-  async function uploadAttachment(file: File) {
-    if (!activeTaskId.value) return
+  async function uploadAttachment(file: File, targetTaskId?: string) {
+    const taskId = targetTaskId || activeTaskId.value
+    if (!taskId) return
     const dataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader()
       reader.onload = () => resolve(reader.result as string)
@@ -236,15 +237,18 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       reader.readAsDataURL(file)
     })
 
-    const attachment = await backend.addAttachment(activeTaskId.value, {
+    const attachment = await backend.addAttachment(taskId, {
       name: file.name,
       url: dataUrl,
       size: file.size,
       type: file.type || 'application/octet-stream',
     })
-    attachments.value.push(attachment)
-    await loadDetail(activeTaskId.value)
+    if (activeTaskId.value === taskId) {
+      attachments.value.push(attachment)
+      await loadDetail(taskId)
+    }
     await refreshRecent()
+    return attachment
   }
 
   async function deleteAttachment(id: string) {
