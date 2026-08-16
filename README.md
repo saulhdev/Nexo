@@ -34,3 +34,29 @@ Cada usuario nuevo recibe un perfil y un proyecto **General**. Las políticas RL
 - **Tablero:** columnas Por hacer / En progreso / En revisión / Hecho, con arrastre.
 - **Detalle:** descripción, estado, prioridad, fecha, proyecto, comentarios y timeline con fecha.
 - **Proyectos:** agrupación tipo espacio de trabajo.
+
+## Capturas de Pantalla (Screenshots)
+
+### Dashboard
+![Dashboard](public/Dashboard.png)
+
+### Vista de Lista
+![Vista de Lista](public/List.png)
+
+### Tablero Kanban
+![Tablero Kanban](public/Kanban.png)
+
+### Matriz de Eisenhower / Prioridades
+![Matriz](public/Matrix.png)
+
+### Vista de Calendario
+![Calendario](public/Calendar.png)
+
+### Nueva Tarea
+![Nueva Tarea](public/New%20task.png)
+
+### Perfil de Usuario
+![Perfil](public/Profile.png)
+
+### Proyectos
+![Proyectos](public/Projects.png)
