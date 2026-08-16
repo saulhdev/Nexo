@@ -20,12 +20,6 @@ create index if not exists attachments_task_idx on public.attachments (task_id, 
 
 alter table public.attachments enable row level security;
 
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies where tablename = 'attachments' and policyname = 'attachments_all_own'
-  ) then
-    create policy "attachments_all_own" on public.attachments
-      for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-  end if;
-end $$;
+drop policy if exists "attachments_all_own" on public.attachments;
+create policy "attachments_all_own" on public.attachments
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
