@@ -5,7 +5,7 @@ import en from './en'
 export type Locale = 'es' | 'en'
 export type TranslationKey = keyof typeof es
 
-const dictionaries: Record<Locale, Record<string, string | string[]>> = { es, en }
+const dictionaries: Record<Locale, Record<string, string | readonly string[]>> = { es, en }
 
 const STORAGE_KEY = 'nexo-locale'
 
@@ -62,9 +62,9 @@ export function t(key: string, params?: Record<string, string | number>): string
 export function tArray(key: string): string[] {
   const dict = dictionaries[locale.value]
   const value = dict[key]
-  if (Array.isArray(value)) return value
+  if (Array.isArray(value)) return [...value]
   const fallback = dictionaries.es[key]
-  if (Array.isArray(fallback)) return fallback
+  if (Array.isArray(fallback)) return [...fallback]
   return []
 }
 

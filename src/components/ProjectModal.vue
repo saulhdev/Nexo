@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { PROJECT_COLORS } from '@/constants'
+import { useI18n } from '@/i18n'
 import { useWorkspaceStore } from '@/stores/workspace'
 
+const { t } = useI18n()
 const open = defineModel<boolean>('open', { default: false })
 const emit = defineEmits<{ created: [id: string] }>()
 const workspace = useWorkspaceStore()
@@ -32,7 +34,7 @@ async function submit() {
     emit('created', project.id)
   } catch (err) {
     const msg = err instanceof Error ? err.message : (err as { message?: string })?.message
-    errorMessage.value = msg || 'No se pudo crear el proyecto'
+    errorMessage.value = msg || t('projectModal.error')
   } finally {
     submitting.value = false
   }
@@ -43,20 +45,20 @@ async function submit() {
   <Teleport to="body">
     <div v-if="open" class="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-4">
       <form class="w-full max-w-md rounded-2xl bg-surface p-5 shadow-xl" @submit.prevent="submit">
-        <h2 class="text-lg font-semibold">Nuevo proyecto</h2>
-        <p class="mt-1 text-sm text-muted">Agrupa tareas por equipo, cliente o área.</p>
+        <h2 class="text-lg font-semibold">{{ t('projectModal.title') }}</h2>
+        <p class="mt-1 text-sm text-muted">{{ t('projectModal.subtitle') }}</p>
 
         <p v-if="errorMessage" class="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700">
           {{ errorMessage }}
         </p>
 
-        <label class="mt-4 block text-xs font-medium text-muted">Nombre</label>
+        <label class="mt-4 block text-xs font-medium text-muted">{{ t('projectModal.name') }}</label>
         <input
           v-model="name"
           class="mt-1 w-full rounded-xl border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-accent"
-          placeholder="Producto, Marketing…"
+          :placeholder="t('projectModal.namePlaceholder')"
         />
-        <p class="mt-4 text-xs font-medium text-muted">Color</p>
+        <p class="mt-4 text-xs font-medium text-muted">{{ t('projectModal.color') }}</p>
         <div class="mt-2 flex flex-wrap gap-2">
           <button
             v-for="swatch in PROJECT_COLORS"
@@ -70,18 +72,17 @@ async function submit() {
         </div>
         <div class="mt-5 flex justify-end gap-2">
           <button type="button" class="rounded-xl px-3 py-2 text-sm text-muted" @click="open = false">
-            Cancelar
+            {{ t('common.cancel') }}
           </button>
           <button
             type="submit"
             class="rounded-xl bg-accent px-3.5 py-2 text-sm font-semibold text-white transition disabled:opacity-50"
             :disabled="!canSubmit || submitting"
           >
-            {{ submitting ? 'Creando…' : 'Crear' }}
+            {{ submitting ? t('common.creating') : t('common.create') }}
           </button>
         </div>
       </form>
     </div>
   </Teleport>
 </template>
-

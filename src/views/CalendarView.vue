@@ -1,20 +1,27 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ChevronLeft, ChevronRight, CalendarOff } from 'lucide-vue-next'
-import PriorityBadge from '@/components/PriorityBadge.vue'
+import { Calendar as CalendarIcon, CalendarOff, ChevronLeft, ChevronRight, Eye, EyeOff, RefreshCw, Settings } from 'lucide-vue-next'
+import M365EventModal from '@/components/M365EventModal.vue'
+import M365SettingsModal from '@/components/M365SettingsModal.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
 import { useI18n } from '@/i18n'
-import { toISODate, isOverdue } from '@/lib/dates'
+import { isOverdue, toISODate } from '@/lib/dates'
+import type { M365Event } from '@/services/m365'
+import { useM365CalendarStore } from '@/stores/m365Calendar'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Task } from '@/types'
 
 const { t, tArray, locale } = useI18n()
 const workspace = useWorkspaceStore()
+const m365 = useM365CalendarStore()
 
 const currentYear = ref(new Date().getFullYear())
 const currentMonth = ref(new Date().getMonth())
 const transitionDir = ref<'left' | 'right'>('right')
 const gridKey = ref(0)
+
+const settingsOpen = ref(false)
+const selectedM365Event = ref<M365Event | null>(null)
 
 const WEEKDAYS = computed(() => tArray('calendar.weekdays'))
 
@@ -37,6 +44,7 @@ interface CalendarDay {
   inMonth: boolean
   isToday: boolean
   tasks: Task[]
+  m365Events: M365Event[]
 }
 
 const calendarDays = computed<CalendarDay[]>(() => {
@@ -72,6 +80,7 @@ const calendarDays = computed<CalendarDay[]>(() => {
       inMonth: date.getMonth() === month,
       isToday: iso === today,
       tasks: tasksByDate.get(iso) ?? [],
+      m365Events: m365.eventsByDate.get(iso) ?? [],
     })
   }
   return days
@@ -115,6 +124,10 @@ function open(id: string) {
   void workspace.openTask(id)
 }
 
+function openM365(event: M365Event) {
+  selectedM365Event.value = event
+}
+
 function getInitials(name?: string) {
   if (!name) return '?'
   return name
@@ -135,7 +148,58 @@ function getInitials(name?: string) {
         <h1 class="text-3xl font-semibold tracking-tight">{{ t('calendar.title') }}</h1>
         <p class="mt-1 text-sm text-muted">{{ t('calendar.subtitle') }}</p>
       </div>
-      <TaskComposer @created="open" />
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Microsoft 365 Control Bar -->
+        <div class="flex items-center gap-1 rounded-xl border border-line bg-surface p-1 shadow-xs">
+          <button
+            type="button"
+            class="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition cursor-pointer"
+            :class="m365.isConfigured ? 'bg-[#0078D4]/10 text-[#0078D4] hover:bg-[#0078D4]/20' : 'text-muted hover:text-ink hover:bg-canvas'"
+            :title="t('m365.modalTitle')"
+            @click="settingsOpen = true"
+          >
+            <CalendarIcon class="size-3.5" />
+            <span>{{ t('m365.button') }}</span>
+            <span v-if="m365.isConfigured" class="ml-0.5 rounded-full bg-[#0078D4] px-1.5 py-0.2 text-[9px] font-bold text-white">
+              {{ m365.events.length }}
+            </span>
+          </button>
+
+          <button
+            v-if="m365.isConfigured"
+            type="button"
+            class="rounded-lg p-1 text-muted hover:bg-canvas hover:text-ink transition cursor-pointer"
+            :title="m365.enabled ? 'Ocultar eventos M365' : 'Mostrar eventos M365'"
+            @click="m365.toggleEnabled"
+          >
+            <Eye v-if="m365.enabled" class="size-3.5 text-[#0078D4]" />
+            <EyeOff v-else class="size-3.5" />
+          </button>
+
+          <button
+            v-if="m365.isConfigured"
+            type="button"
+            class="rounded-lg p-1 text-muted hover:bg-canvas hover:text-ink transition cursor-pointer"
+            :disabled="m365.loading"
+            :title="t('m365.syncNow')"
+            @click="m365.sync"
+          >
+            <RefreshCw class="size-3.5" :class="m365.loading && 'animate-spin text-[#0078D4]'" />
+          </button>
+
+          <button
+            type="button"
+            class="rounded-lg p-1 text-muted hover:bg-canvas hover:text-ink transition cursor-pointer"
+            :title="t('m365.modalTitle')"
+            @click="settingsOpen = true"
+          >
+            <Settings class="size-3.5" />
+          </button>
+        </div>
+
+        <TaskComposer @created="open" />
+      </div>
     </div>
 
     <!-- Month navigation -->
@@ -204,7 +268,7 @@ function getInitials(name?: string) {
               'border-r-0': (idx + 1) % 7 === 0,
             }"
           >
-            <!-- Day number -->
+            <!-- Day number & item counter -->
             <div class="mb-0.5 flex items-center justify-between">
               <span
                 class="inline-flex size-6 items-center justify-center rounded-full text-xs font-medium"
@@ -213,15 +277,33 @@ function getInitials(name?: string) {
                 {{ cell.day }}
               </span>
               <span
-                v-if="cell.tasks.length > 0"
+                v-if="(cell.tasks.length + cell.m365Events.length) > 0"
                 class="text-[10px] font-medium text-muted"
               >
-                {{ cell.tasks.length }}
+                {{ cell.tasks.length + cell.m365Events.length }}
               </span>
             </div>
 
-            <!-- Tasks -->
+            <!-- Items: Native tasks + Microsoft 365 Events -->
             <div class="flex-1 space-y-0.5 overflow-y-auto scrollbar-thin">
+              <!-- Microsoft 365 Events -->
+              <button
+                v-for="mEvent in cell.m365Events"
+                :key="mEvent.id"
+                class="group/m365 flex w-full cursor-pointer items-center gap-1 rounded-md bg-[#0078D4]/10 hover:bg-[#0078D4]/20 border border-[#0078D4]/25 px-1.5 py-[3px] text-left transition"
+                :title="`Microsoft 365: ${mEvent.title}${mEvent.startTime ? ` (${mEvent.startTime})` : ''}`"
+                @click="openM365(mEvent)"
+              >
+                <span class="size-1.5 shrink-0 rounded-full bg-[#0078D4]" />
+                <span class="min-w-0 flex-1 truncate text-[11px] font-medium leading-tight text-[#0078D4]">
+                  {{ mEvent.title }}
+                </span>
+                <span v-if="mEvent.startTime" class="text-[9px] font-semibold text-[#0078D4]/70 shrink-0">
+                  {{ mEvent.startTime }}
+                </span>
+              </button>
+
+              <!-- Nexo Tasks -->
               <button
                 v-for="task in cell.tasks.slice(0, 4)"
                 :key="task.id"
@@ -244,17 +326,22 @@ function getInitials(name?: string) {
                   {{ getInitials(task.assignee.fullName) }}
                 </span>
               </button>
+
               <p
-                v-if="cell.tasks.length > 4"
+                v-if="(cell.tasks.length + cell.m365Events.length) > 4"
                 class="px-1.5 text-[10px] font-medium text-muted"
               >
-                +{{ cell.tasks.length - 4 }} {{ t('calendar.more') }}
+                +{{ (cell.tasks.length + cell.m365Events.length) - 4 }} {{ t('calendar.more') }}
               </p>
             </div>
           </div>
         </div>
       </Transition>
     </div>
+
+    <!-- Modals -->
+    <M365SettingsModal v-model:open="settingsOpen" />
+    <M365EventModal :event="selectedM365Event" @close="selectedM365Event = null" />
   </div>
 </template>
 

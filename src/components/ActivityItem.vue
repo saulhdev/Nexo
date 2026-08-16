@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { PRIORITY_LABEL, STATUS_LABEL } from '@/constants'
+import { useI18n } from '@/i18n'
 import { formatDate, formatDateTime } from '@/lib/dates'
 import type { Activity, TaskPriority, TaskStatus } from '@/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   item: Activity
@@ -10,29 +13,39 @@ const props = defineProps<{
 
 function text() {
   const { type, meta } = props.item
-  if (type === 'task.created') return 'creó la tarea'
-  if (type === 'task.updated' && meta.field === 'title') return 'cambió el título'
-  if (type === 'task.updated') return 'actualizó la descripción'
+  if (type === 'task.created') return t('activity.createdTask')
+  if (type === 'task.updated' && meta.field === 'title') return t('activity.changedTitle')
+  if (type === 'task.updated') return t('activity.updatedDescription')
   if (type === 'status.changed') {
-    return `movió de ${STATUS_LABEL[meta.from as TaskStatus]} a ${STATUS_LABEL[meta.to as TaskStatus]}`
+    return t('activity.movedStatus', {
+      from: STATUS_LABEL[meta.from as TaskStatus] || String(meta.from),
+      to: STATUS_LABEL[meta.to as TaskStatus] || String(meta.to),
+    })
   }
   if (type === 'priority.changed') {
-    return `cambió la prioridad de ${PRIORITY_LABEL[meta.from as TaskPriority]} a ${PRIORITY_LABEL[meta.to as TaskPriority]}`
+    return t('activity.changedPriority', {
+      from: PRIORITY_LABEL[meta.from as TaskPriority] || String(meta.from),
+      to: PRIORITY_LABEL[meta.to as TaskPriority] || String(meta.to),
+    })
   }
   if (type === 'start_date.changed') {
-    return `cambió la fecha de inicio a ${meta.to ? formatDate(String(meta.to)) : 'sin fecha'}`
+    return t('activity.changedStartDate', {
+      date: meta.to ? formatDate(String(meta.to)) : t('dates.noDate').toLowerCase(),
+    })
   }
   if (type === 'due_date.changed') {
-    return `cambió la fecha de vencimiento a ${meta.to ? formatDate(String(meta.to)) : 'sin fecha'}`
+    return t('activity.changedDueDate', {
+      date: meta.to ? formatDate(String(meta.to)) : t('dates.noDate').toLowerCase(),
+    })
   }
   if (type === 'assignee.changed') {
-    if (!meta.toId && !meta.toName) return 'desasignó la tarea'
-    return `asignó la tarea a ${meta.toName || 'un usuario'}`
+    if (!meta.toId && !meta.toName) return t('activity.unassigned')
+    return t('activity.assignedTo', { name: String(meta.toName || t('activity.aUser')) })
   }
-  if (type === 'comment.added') return 'comentó'
-  if (type === 'attachment.added') return `adjuntó "${meta.name || 'un archivo'}"`
-  if (type === 'attachment.removed') return `eliminó el adjunto "${meta.name || 'un archivo'}"`
-  return 'actualizó la tarea'
+  if (type === 'comment.added') return t('activity.commented')
+  if (type === 'attachment.added') return t('activity.attachedFile', { name: String(meta.name || t('activity.aFile')) })
+  if (type === 'attachment.removed') return t('activity.removedAttachment', { name: String(meta.name || t('activity.aFile')) })
+  return t('activity.updatedTask')
 }
 </script>
 
@@ -41,7 +54,7 @@ function text() {
     <div class="mt-1.5 size-2 shrink-0 rounded-full bg-accent/80" />
     <div class="min-w-0">
       <p class="text-sm text-ink">
-        <span class="font-medium">{{ item.authorName || 'Alguien' }}</span>
+        <span class="font-medium">{{ item.authorName || t('common.someone') }}</span>
         {{ text() }}
         <span v-if="showTask && item.taskTitle" class="text-muted"> · {{ item.taskTitle }}</span>
       </p>
