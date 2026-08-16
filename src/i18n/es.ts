@@ -128,7 +128,7 @@ export default {
   'calendar.today': 'Hoy',
   'calendar.unscheduled': 'sin fecha',
   'calendar.more': 'más',
-  'calendar.weekdays': ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+  'calendar.weekdays': ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
 
   // ── Profile ──
   'profile.title': 'Mi Perfil',

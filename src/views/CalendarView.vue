@@ -53,9 +53,8 @@ const calendarDays = computed<CalendarDay[]>(() => {
   const firstDay = new Date(year, month, 1)
   const lastDay = new Date(year, month + 1, 0)
 
-  // Monday-based: 0=Mon ... 6=Sun
-  let startWeekday = firstDay.getDay() - 1
-  if (startWeekday < 0) startWeekday = 6
+  // Sunday-based: 0=Sun ... 6=Sat
+  const startWeekday = firstDay.getDay()
 
   const totalCells = Math.ceil((startWeekday + lastDay.getDate()) / 7) * 7
   const today = toISODate(new Date())
