@@ -185,6 +185,7 @@ textarea {
 
 .p-datepicker:not(.p-datepicker-inline) {
   width: 100%;
+  position: relative;
 }
 
 .p-datepicker-input {
@@ -194,10 +195,22 @@ textarea {
   color: var(--color-ink) !important;
   font-family: var(--font-sans) !important;
   font-size: 0.8125rem !important;
-  padding: 0.5rem 0.75rem !important;
+  padding: 0.5rem 2.25rem 0.5rem 0.75rem !important;
   transition: all 150ms ease !important;
   box-shadow: none !important;
   width: 100%;
+}
+
+.p-datepicker-dropdown-icon,
+.p-datepicker-icon,
+.p-datepicker-dropdown,
+.p-datepicker [data-pc-section="dropdownicon"],
+.p-datepicker [data-pc-section="dropdownbutton"] {
+  color: var(--color-muted) !important;
+  right: 0.6rem !important;
+  width: 0.875rem !important;
+  height: 0.875rem !important;
+  pointer-events: none;
 }
 
 .p-datepicker-input:not(.p-disabled):hover {
@@ -333,9 +346,19 @@ textarea {
 
 /* Small variant for tables / compact forms */
 .p-datepicker-sm .p-datepicker-input {
-  padding: 0.25rem 0.5rem !important;
+  padding: 0.25rem 1.85rem 0.25rem 0.5rem !important;
   font-size: 0.75rem !important;
   border-radius: 0.5rem !important;
+}
+
+.p-datepicker-sm .p-datepicker-dropdown-icon,
+.p-datepicker-sm .p-datepicker-icon,
+.p-datepicker-sm .p-datepicker-dropdown,
+.p-datepicker-sm [data-pc-section="dropdownicon"],
+.p-datepicker-sm [data-pc-section="dropdownbutton"] {
+  right: 0.4rem !important;
+  width: 0.75rem !important;
+  height: 0.75rem !important;
 }
 
 

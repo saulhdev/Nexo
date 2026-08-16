@@ -138,13 +138,13 @@ async function changeDueDate(task: Task, dueDate: string | null) {
       </div>
     </div>
 
-    <div class="mt-4 rounded-2xl border border-line bg-surface shadow-sm overflow-hidden">
-      <table class="w-full table-fixed text-left text-sm">
+    <div class="mt-4 rounded-2xl border border-line bg-surface shadow-sm overflow-x-auto">
+      <table class="w-full min-w-[1040px] table-fixed text-left text-sm">
         <colgroup>
-          <col />
+          <col class="w-[240px]" />
           <col class="w-[140px]" />
-          <col class="w-[130px]" />
-          <col class="w-[120px]" />
+          <col class="w-[135px]" />
+          <col class="w-[125px]" />
           <col class="w-[130px]" />
           <col class="w-[130px]" />
           <col class="w-[140px]" />
@@ -152,14 +152,14 @@ async function changeDueDate(task: Task, dueDate: string | null) {
         </colgroup>
         <thead class="bg-canvas/80 text-[11px] uppercase tracking-wide text-muted">
           <tr>
-            <th class="px-4 py-3 font-semibold">{{ t('list.thTask') }}</th>
-            <th class="px-3 py-3 font-semibold">{{ t('list.thAssignee') }}</th>
-            <th class="px-3 py-3 font-semibold">{{ t('list.thStatus') }}</th>
-            <th class="px-3 py-3 font-semibold">{{ t('list.thPriority') }}</th>
-            <th class="px-3 py-3 font-semibold">{{ t('list.thStart') }}</th>
-            <th class="px-3 py-3 font-semibold">{{ t('list.thDue') }}</th>
-            <th class="px-3 py-3 font-semibold">{{ t('list.thProject') }}</th>
-            <th class="px-4 py-3 font-semibold text-right">{{ t('list.thActions') }}</th>
+            <th class="px-3 py-3 font-semibold">{{ t('list.thTask') }}</th>
+            <th class="px-2 py-3 font-semibold">{{ t('list.thAssignee') }}</th>
+            <th class="px-2 py-3 font-semibold">{{ t('list.thStatus') }}</th>
+            <th class="px-2 py-3 font-semibold">{{ t('list.thPriority') }}</th>
+            <th class="px-2 py-3 font-semibold">{{ t('list.thStart') }}</th>
+            <th class="px-2 py-3 font-semibold">{{ t('list.thDue') }}</th>
+            <th class="px-2 py-3 font-semibold">{{ t('list.thProject') }}</th>
+            <th class="px-3 py-3 font-semibold text-right">{{ t('list.thActions') }}</th>
           </tr>
         </thead>
         <tbody>
