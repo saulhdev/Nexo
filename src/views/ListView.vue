@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Inbox, Pencil, Trash2 } from 'lucide-vue-next'
+import CustomDatePicker from '@/components/CustomDatePicker.vue'
 import CustomSelect from '@/components/CustomSelect.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
@@ -77,13 +78,11 @@ async function changeProject(task: Task, projectId: string) {
   await workspace.updateTask(task.id, { projectId })
 }
 
-async function changeStartDate(task: Task, startDate: string, e: Event) {
-  e.stopPropagation()
+async function changeStartDate(task: Task, startDate: string | null) {
   await workspace.updateTask(task.id, { startDate: startDate || null })
 }
 
-async function changeDueDate(task: Task, dueDate: string, e: Event) {
-  e.stopPropagation()
+async function changeDueDate(task: Task, dueDate: string | null) {
   await workspace.updateTask(task.id, { dueDate: dueDate || null })
 }
 </script>
@@ -207,23 +206,25 @@ async function changeDueDate(task: Task, dueDate: string, e: Event) {
             </td>
 
             <!-- Fecha Inicio (editable) -->
-            <td class="px-3 py-2" @click.stop>
-              <input
-                :value="task.startDate ?? ''"
-                type="date"
-                class="w-full rounded-lg border border-line bg-canvas px-1.5 py-1 text-xs text-muted outline-none focus:border-accent"
-                @change="changeStartDate(task, ($event.target as HTMLInputElement).value, $event)"
+            <td class="px-3 py-2 min-w-[130px]" @click.stop>
+              <CustomDatePicker
+                :modelValue="task.startDate"
+                size="small"
+                placeholder="-"
+                showButtonBar
+                @update:modelValue="changeStartDate(task, $event)"
               />
             </td>
 
             <!-- Fecha Vencimiento (editable) -->
-            <td class="px-3 py-2" @click.stop>
-              <input
-                :value="task.dueDate ?? ''"
-                type="date"
-                class="w-full rounded-lg border border-line bg-canvas px-1.5 py-1 text-xs outline-none focus:border-accent"
-                :class="isOverdue(task.dueDate, task.status) ? 'font-medium text-rose-600 border-rose-300' : 'text-muted'"
-                @change="changeDueDate(task, ($event.target as HTMLInputElement).value, $event)"
+            <td class="px-3 py-2 min-w-[130px]" @click.stop>
+              <CustomDatePicker
+                :modelValue="task.dueDate"
+                size="small"
+                placeholder="-"
+                showButtonBar
+                :invalid="isOverdue(task.dueDate, task.status)"
+                @update:modelValue="changeDueDate(task, $event)"
               />
             </td>
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Download, FileText, Grid2x2, Paperclip, Trash2, Upload, X } from 'lucide-vue-next'
+import CustomDatePicker from '@/components/CustomDatePicker.vue'
 import CustomSelect from '@/components/CustomSelect.vue'
 import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
 import { useI18n } from '@/i18n'
@@ -237,20 +238,20 @@ function close() {
           </label>
           <label class="field-label">
             {{ t('drawer.startDate') }}
-            <input
-              :value="task.startDate ?? ''"
-              type="date"
-              class="field"
-              @change="persist({ startDate: ($event.target as HTMLInputElement).value || null })"
+            <CustomDatePicker
+              :modelValue="task.startDate"
+              :placeholder="t('drawer.startDate')"
+              showButtonBar
+              @update:modelValue="persist({ startDate: $event })"
             />
           </label>
           <label class="field-label">
             {{ t('drawer.dueDate') }}
-            <input
-              :value="task.dueDate ?? ''"
-              type="date"
-              class="field"
-              @change="persist({ dueDate: ($event.target as HTMLInputElement).value || null })"
+            <CustomDatePicker
+              :modelValue="task.dueDate"
+              :placeholder="t('drawer.dueDate')"
+              showButtonBar
+              @update:modelValue="persist({ dueDate: $event })"
             />
           </label>
           <label class="field-label">

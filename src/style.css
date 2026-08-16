@@ -178,3 +178,164 @@ textarea {
   font-size: 0.75rem !important;
 }
 
+/* DatePicker Styling */
+.p-datepicker {
+  font-family: var(--font-sans) !important;
+}
+
+.p-datepicker:not(.p-datepicker-inline) {
+  width: 100%;
+}
+
+.p-datepicker-input {
+  background: var(--color-surface) !important;
+  border-color: var(--color-line) !important;
+  border-radius: 0.75rem !important;
+  color: var(--color-ink) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.8125rem !important;
+  padding: 0.5rem 0.75rem !important;
+  transition: all 150ms ease !important;
+  box-shadow: none !important;
+  width: 100%;
+}
+
+.p-datepicker-input:not(.p-disabled):hover {
+  border-color: #c9bfab !important;
+}
+
+.p-datepicker-input:not(.p-disabled):focus,
+.p-datepicker-input.p-focus {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 1px var(--color-accent) !important;
+  outline: none !important;
+}
+
+.p-datepicker-panel {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-line) !important;
+  border-radius: 0.875rem !important;
+  box-shadow: 0 12px 30px -5px rgba(27, 25, 20, 0.12), 0 8px 10px -6px rgba(27, 25, 20, 0.08) !important;
+  z-index: 10650 !important;
+  padding: 0.75rem !important;
+}
+
+.p-datepicker-header {
+  background: transparent !important;
+  border-bottom: 1px solid var(--color-line) !important;
+  padding: 0.25rem 0.25rem 0.6rem 0.25rem !important;
+  color: var(--color-ink) !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.p-datepicker-title {
+  gap: 0.35rem !important;
+}
+
+.p-datepicker-select-month,
+.p-datepicker-select-year {
+  color: var(--color-ink) !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  padding: 0.25rem 0.5rem !important;
+  border-radius: 0.375rem !important;
+}
+
+.p-datepicker-select-month:hover,
+.p-datepicker-select-year:hover {
+  background: var(--color-canvas) !important;
+  color: var(--color-accent) !important;
+}
+
+.p-datepicker-prev-button,
+.p-datepicker-next-button {
+  color: var(--color-muted) !important;
+  border-radius: 0.5rem !important;
+  width: 1.85rem !important;
+  height: 1.85rem !important;
+  transition: all 120ms ease !important;
+}
+
+.p-datepicker-prev-button:hover,
+.p-datepicker-next-button:hover {
+  background: var(--color-canvas) !important;
+  color: var(--color-ink) !important;
+}
+
+.p-datepicker-calendar {
+  margin-top: 0.5rem !important;
+}
+
+.p-datepicker-calendar th {
+  color: var(--color-muted) !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  padding: 0.35rem !important;
+}
+
+.p-datepicker-day {
+  color: var(--color-ink) !important;
+  font-size: 0.8125rem !important;
+  border-radius: 0.5rem !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  transition: all 120ms ease !important;
+}
+
+.p-datepicker-day:not(.p-datepicker-day-selected):not(.p-disabled):hover {
+  background: var(--color-canvas) !important;
+  color: var(--color-accent) !important;
+}
+
+.p-datepicker-day.p-datepicker-day-selected {
+  background: var(--color-accent) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.p-datepicker-today > .p-datepicker-day:not(.p-datepicker-day-selected) {
+  background: color-mix(in oklab, var(--color-accent) 15%, var(--color-surface)) !important;
+  color: var(--color-accent-dark) !important;
+  font-weight: 600 !important;
+}
+
+.p-datepicker-buttonbar {
+  border-top: 1px solid var(--color-line) !important;
+  padding-top: 0.5rem !important;
+  margin-top: 0.5rem !important;
+  display: flex !important;
+  justify-content: space-between !important;
+}
+
+.p-datepicker-buttonbar button {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  padding: 0.35rem 0.75rem !important;
+  border-radius: 0.5rem !important;
+  transition: all 120ms ease !important;
+}
+
+.p-datepicker-buttonbar button:first-child {
+  color: var(--color-accent) !important;
+}
+
+.p-datepicker-buttonbar button:last-child {
+  color: var(--color-muted) !important;
+}
+
+.p-datepicker-buttonbar button:hover {
+  background: var(--color-canvas) !important;
+}
+
+/* Small variant for tables / compact forms */
+.p-datepicker-sm .p-datepicker-input {
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.75rem !important;
+  border-radius: 0.5rem !important;
+}
+
+

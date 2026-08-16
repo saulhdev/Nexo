@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { Calendar, FileText, Grid2x2, Paperclip, X } from 'lucide-vue-next'
+import { FileText, Grid2x2, Paperclip, X } from 'lucide-vue-next'
+import CustomDatePicker from '@/components/CustomDatePicker.vue'
 import CustomSelect from '@/components/CustomSelect.vue'
 import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
 import { useI18n } from '@/i18n'
@@ -331,27 +332,21 @@ defineExpose({ start, editTask })
 
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.startDate') }}</label>
-                  <div class="relative mt-1.5">
-                    <Calendar class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                    <input
-                      v-model="form.startDate"
-                      type="date"
-                      class="field-input pl-10 pr-3"
-                    />
-                  </div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">{{ t('composer.startDate') }}</label>
+                  <CustomDatePicker
+                    v-model="form.startDate"
+                    :placeholder="t('composer.startDate')"
+                    showButtonBar
+                  />
                 </div>
 
                 <div>
-                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted">{{ t('composer.dueDate') }}</label>
-                  <div class="relative mt-1.5">
-                    <Calendar class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
-                    <input
-                      v-model="form.dueDate"
-                      type="date"
-                      class="field-input pl-10 pr-3"
-                    />
-                  </div>
+                  <label class="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">{{ t('composer.dueDate') }}</label>
+                  <CustomDatePicker
+                    v-model="form.dueDate"
+                    :placeholder="t('composer.dueDate')"
+                    showButtonBar
+                  />
                 </div>
               </div>
 
