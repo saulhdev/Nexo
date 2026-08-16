@@ -23,8 +23,8 @@ export default {
   // ── Nav ──
   'nav.dashboard': 'Dashboard',
   'nav.list': 'List',
-  'nav.board': 'Board',
-  'nav.matrix': 'Matrix',
+  'nav.board': 'Kanban Board',
+  'nav.matrix': 'Eisenhower Matrix',
   'nav.calendar': 'Calendar',
   'nav.profile': 'My Profile',
 
