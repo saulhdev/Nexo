@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import { CalendarDays, Columns3, Globe, Grid2x2, LayoutDashboard, ListChecks, LogOut, Pencil, Plus, User } from 'lucide-vue-next'
+import { CalendarDays, ChevronDown, Columns3, Globe, Grid2x2, LayoutDashboard, ListChecks, LogOut, Pencil, Plus, User } from 'lucide-vue-next'
 import { APP_NAME } from '@/constants'
 import { useI18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -16,8 +16,11 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const workspace = useWorkspaceStore()
+
 const projectOpen = ref(false)
 const projectToEdit = ref<Project | null>(null)
+const userMenuOpen = ref(false)
+const userMenuRef = ref<HTMLElement | null>(null)
 const currentYear = new Date().getFullYear()
 
 function openNewProject() {
@@ -28,6 +31,21 @@ function openNewProject() {
 function openEditProject(project: Project) {
   projectToEdit.value = project
   projectOpen.value = true
+}
+
+function toggleUserMenu() {
+  userMenuOpen.value = !userMenuOpen.value
+}
+
+function handleUserMenuClickOutside(e: MouseEvent) {
+  if (userMenuRef.value && !userMenuRef.value.contains(e.target as Node)) {
+    userMenuOpen.value = false
+  }
+}
+
+async function handleLogout() {
+  userMenuOpen.value = false
+  await logout()
 }
 
 const nav = computed(() => [
@@ -55,6 +73,11 @@ function toggleLocale() {
 
 onMounted(() => {
   void workspace.bootstrap()
+  document.addEventListener('click', handleUserMenuClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleUserMenuClickOutside)
 })
 
 watch(
@@ -184,25 +207,56 @@ function filterProject(id: string) {
           <!-- Notifications popover -->
           <NotificationPopover />
 
-          <!-- User profile link -->
-          <RouterLink
-            :to="{ name: 'profile' }"
-            class="flex items-center gap-2 rounded-xl border border-line bg-surface px-2.5 py-1 text-ink transition hover:bg-canvas"
-          >
-            <div class="grid size-7 place-items-center rounded-full bg-accent/15 text-xs font-bold text-accent">
-              {{ initials }}
-            </div>
-            <span class="hidden sm:inline text-xs font-medium text-ink">{{ auth.user?.fullName || t('common.you') }}</span>
-          </RouterLink>
+          <!-- User Profile Dropdown Menu -->
+          <div ref="userMenuRef" class="relative inline-block text-left">
+            <button
+              class="flex items-center gap-2 rounded-xl border border-line bg-surface px-2.5 py-1.5 text-ink transition hover:bg-canvas focus:outline-none"
+              @click.stop="toggleUserMenu"
+            >
+              <div class="grid size-7 place-items-center rounded-full bg-accent/15 text-xs font-bold text-accent">
+                {{ initials }}
+              </div>
+              <span class="hidden sm:inline text-xs font-medium text-ink">{{ auth.user?.fullName || t('common.you') }}</span>
+              <ChevronDown class="size-3.5 text-muted transition-transform duration-200" :class="userMenuOpen && 'rotate-180'" />
+            </button>
 
-          <!-- Logout button -->
-          <button
-            class="grid size-9 place-items-center rounded-xl border border-line bg-surface text-ink/70 transition hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200"
-            :title="t('common.logout')"
-            @click="logout"
-          >
-            <LogOut class="size-4" />
-          </button>
+            <!-- Dropdown Menu items -->
+            <Transition
+              enter-active-class="transition duration-150 ease-out"
+              enter-from-class="transform scale-95 opacity-0"
+              enter-to-class="transform scale-100 opacity-100"
+              leave-active-class="transition duration-100 ease-in"
+              leave-from-class="transform scale-100 opacity-100"
+              leave-to-class="transform scale-95 opacity-0"
+            >
+              <div
+                v-if="userMenuOpen"
+                class="absolute right-0 mt-2 w-48 rounded-2xl border border-line bg-surface p-1.5 shadow-xl z-50 space-y-0.5"
+              >
+                <div class="px-3 py-2 border-b border-line mb-1">
+                  <p class="text-xs font-semibold text-ink truncate">{{ auth.user?.fullName || t('common.you') }}</p>
+                  <p class="text-[11px] text-muted truncate">{{ auth.user?.email }}</p>
+                </div>
+
+                <RouterLink
+                  :to="{ name: 'profile' }"
+                  class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-ink/80 transition hover:bg-canvas hover:text-ink"
+                  @click="userMenuOpen = false"
+                >
+                  <User class="size-4 text-muted" />
+                  {{ t('nav.profile') }}
+                </RouterLink>
+
+                <button
+                  class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-rose-600 transition hover:bg-rose-50"
+                  @click="handleLogout"
+                >
+                  <LogOut class="size-4" />
+                  {{ t('common.logout') }}
+                </button>
+              </div>
+            </Transition>
+          </div>
         </div>
       </header>
 
