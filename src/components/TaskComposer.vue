@@ -150,7 +150,6 @@ defineExpose({ start })
         <div
           v-if="open"
           class="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-ink/40 p-4 backdrop-blur-xs"
-          @click.self="cancel"
         >
           <div class="w-full max-w-3xl rounded-2xl border border-line bg-surface p-6 shadow-2xl">
             <header class="flex items-center justify-between border-b border-line pb-4">

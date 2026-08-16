@@ -41,7 +41,7 @@ async function submit() {
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-4" @click.self="open = false">
+    <div v-if="open" class="fixed inset-0 z-50 grid place-items-center bg-ink/40 p-4">
       <form class="w-full max-w-md rounded-2xl bg-surface p-5 shadow-xl" @submit.prevent="submit">
         <h2 class="text-lg font-semibold">Nuevo proyecto</h2>
         <p class="mt-1 text-sm text-muted">Agrupa tareas por equipo, cliente o área.</p>
