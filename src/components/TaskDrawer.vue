@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Trash2, X } from 'lucide-vue-next'
+import { Download, FileText, Paperclip, Trash2, Upload, X } from 'lucide-vue-next'
 import { PRIORITIES, STATUSES } from '@/constants'
 import { formatDateTime } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
 import ActivityItem from '@/components/ActivityItem.vue'
 
 const workspace = useWorkspaceStore()
-const tab = ref<'comments' | 'activity'>('comments')
+const tab = ref<'comments' | 'attachments' | 'activity'>('comments')
 const draft = ref('')
 const saving = ref(false)
+const uploading = ref(false)
 const title = ref('')
 const description = ref('')
+const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const task = computed(() => workspace.activeTask)
 
@@ -51,6 +53,37 @@ async function submitComment() {
   tab.value = 'comments'
 }
 
+function triggerFileSelect() {
+  fileInputRef.value?.click()
+}
+
+async function onFileSelected(e: Event) {
+  const target = e.target as HTMLInputElement
+  const files = target.files
+  if (!files || !files.length) return
+  uploading.value = true
+  try {
+    for (let i = 0; i < files.length; i++) {
+      await workspace.uploadAttachment(files[i])
+    }
+    tab.value = 'attachments'
+  } finally {
+    uploading.value = false
+    target.value = ''
+  }
+}
+
+async function deleteAttachment(id: string) {
+  if (!confirm('¿Eliminar este archivo adjunto?')) return
+  await workspace.deleteAttachment(id)
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 async function remove() {
   if (!task.value) return
   if (!confirm('¿Eliminar esta tarea? Esta acción no se puede deshacer.')) return
@@ -83,7 +116,7 @@ function close() {
             />
           </div>
           <div class="flex items-center gap-1">
-            <button class="icon-btn" title="Eliminar" @click="remove">
+            <button class="icon-btn" title="Eliminar tarea" @click="remove">
               <Trash2 class="size-4" />
             </button>
             <button class="icon-btn" title="Cerrar" @click="close">
@@ -106,7 +139,16 @@ function close() {
             </select>
           </label>
           <label class="field-label">
-            Fecha
+            Fecha de inicio
+            <input
+              :value="task.startDate ?? ''"
+              type="date"
+              class="field"
+              @change="persist({ startDate: ($event.target as HTMLInputElement).value || null })"
+            />
+          </label>
+          <label class="field-label">
+            Fecha de vencimiento
             <input
               :value="task.dueDate ?? ''"
               type="date"
@@ -114,7 +156,7 @@ function close() {
               @change="persist({ dueDate: ($event.target as HTMLInputElement).value || null })"
             />
           </label>
-          <label class="field-label">
+          <label class="field-label col-span-2">
             Proyecto
             <select :value="task.projectId" class="field" @change="persist({ projectId: ($event.target as HTMLSelectElement).value })">
               <option v-for="project in workspace.projects" :key="project.id" :value="project.id">
@@ -129,7 +171,7 @@ function close() {
             <p class="text-xs font-semibold uppercase tracking-wide text-muted">Descripción</p>
             <textarea
               v-model="description"
-              rows="5"
+              rows="4"
               class="mt-2 w-full resize-y rounded-xl border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-accent"
               placeholder="Qué hay que hacer, contexto, criterios de cierre…"
               @blur="saveDescription"
@@ -150,6 +192,14 @@ function close() {
                 Comentarios ({{ workspace.comments.length }})
               </button>
               <button
+                class="tab flex items-center gap-1.5"
+                :class="tab === 'attachments' && 'tab-active'"
+                @click="tab = 'attachments'"
+              >
+                <Paperclip class="size-3.5" />
+                Adjuntos ({{ workspace.attachments.length }})
+              </button>
+              <button
                 class="tab"
                 :class="tab === 'activity' && 'tab-active'"
                 @click="tab = 'activity'"
@@ -158,6 +208,7 @@ function close() {
               </button>
             </div>
 
+            <!-- TAB COMENTARIOS -->
             <div v-if="tab === 'comments'" class="mt-4 space-y-4">
               <article
                 v-for="comment in workspace.comments"
@@ -192,6 +243,87 @@ function close() {
               </form>
             </div>
 
+            <!-- TAB ADJUNTOS -->
+            <div v-else-if="tab === 'attachments'" class="mt-4 space-y-4">
+              <div class="flex items-center justify-between">
+                <p class="text-xs font-semibold uppercase tracking-wide text-muted">Archivos adjuntos</p>
+                <input
+                  ref="fileInputRef"
+                  type="file"
+                  multiple
+                  class="hidden"
+                  @change="onFileSelected"
+                />
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-50"
+                  :disabled="uploading"
+                  @click="triggerFileSelect"
+                >
+                  <Upload class="size-3.5" />
+                  {{ uploading ? 'Subiendo…' : 'Agregar adjunto' }}
+                </button>
+              </div>
+
+              <div v-if="workspace.attachments.length" class="grid gap-3 sm:grid-cols-2">
+                <div
+                  v-for="item in workspace.attachments"
+                  :key="item.id"
+                  class="group relative flex items-start gap-3 rounded-xl border border-line bg-canvas p-3 transition hover:border-accent/40 shadow-xs"
+                >
+                  <div v-if="item.type.startsWith('image/')" class="size-12 shrink-0 overflow-hidden rounded-lg bg-line/50">
+                    <img :src="item.url" :alt="item.name" class="size-full object-cover" />
+                  </div>
+                  <div v-else class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                    <FileText class="size-6" />
+                  </div>
+
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-xs font-semibold text-ink" :title="item.name">{{ item.name }}</p>
+                    <p class="mt-0.5 text-[11px] text-muted">{{ formatFileSize(item.size) }}</p>
+                    <div class="mt-2 flex items-center gap-2">
+                      <a
+                        :href="item.url"
+                        :download="item.name"
+                        target="_blank"
+                        class="inline-flex items-center gap-1 text-[11px] font-semibold text-accent hover:underline"
+                      >
+                        <Download class="size-3" />
+                        Abrir
+                      </a>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="rounded-md p-1 text-muted hover:bg-rose-500/10 hover:text-rose-600"
+                    title="Eliminar adjunto"
+                    @click="deleteAttachment(item.id)"
+                  >
+                    <Trash2 class="size-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <div
+                v-else
+                class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-line p-6 text-center"
+              >
+                <Paperclip class="size-8 text-muted/60" />
+                <p class="mt-2 text-sm font-medium">Sin archivos adjuntos</p>
+                <p class="mt-1 text-xs text-muted">Sube documentos, capturas o imágenes relativas a esta tarea.</p>
+                <button
+                  type="button"
+                  class="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas"
+                  @click="triggerFileSelect"
+                >
+                  <Upload class="size-3.5" />
+                  Seleccionar archivo
+                </button>
+              </div>
+            </div>
+
+            <!-- TAB ACTIVIDAD -->
             <div v-else class="mt-4 space-y-4">
               <ActivityItem v-for="item in workspace.activities" :key="item.id" :item="item" />
               <p v-if="!workspace.activities.length" class="text-sm text-muted">

@@ -7,7 +7,7 @@ import PriorityBadge from '@/components/PriorityBadge.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
 import { PRIORITIES } from '@/constants'
-import { dueLabel, formatGreetingDate, isOverdue } from '@/lib/dates'
+import { formatDateRange, formatGreetingDate, isOverdue } from '@/lib/dates'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
 
@@ -139,7 +139,7 @@ function goList(status?: string) {
               class="shrink-0 text-xs font-medium"
               :class="isOverdue(task.dueDate, task.status) ? 'text-rose-600' : 'text-muted'"
             >
-              {{ dueLabel(task.dueDate) }}
+              {{ formatDateRange(task.startDate, task.dueDate) }}
             </span>
           </button>
         </div>

@@ -23,6 +23,7 @@ const form = reactive({
   description: '',
   status: (props.defaultStatus ?? 'todo') as TaskStatus,
   priority: 'medium' as TaskPriority,
+  startDate: '',
   dueDate: '',
   projectId: '',
 })
@@ -34,6 +35,7 @@ function reset() {
   form.description = ''
   form.status = props.defaultStatus ?? 'todo'
   form.priority = 'medium'
+  form.startDate = ''
   form.dueDate = ''
   form.projectId = workspace.projects[0]?.id ?? ''
 }
@@ -52,6 +54,7 @@ async function submit() {
       description: form.description,
       status: form.status,
       priority: form.priority,
+      startDate: form.startDate || null,
       dueDate: form.dueDate || null,
       projectId: form.projectId,
     })
@@ -105,7 +108,7 @@ defineExpose({ start })
         class="mt-2 w-full resize-none bg-transparent text-sm text-ink outline-none placeholder:text-muted/70"
         placeholder="Descripción (opcional)"
       />
-      <div class="mt-3 flex flex-wrap gap-2">
+      <div class="mt-3 flex flex-wrap items-center gap-2">
         <select v-model="form.projectId" class="field">
           <option disabled value="">Proyecto</option>
           <option v-for="project in workspace.projects" :key="project.id" :value="project.id">
@@ -122,7 +125,14 @@ defineExpose({ start })
             {{ priority.label }}
           </option>
         </select>
-        <input v-model="form.dueDate" type="date" class="field" />
+        <div class="flex items-center gap-1">
+          <span class="text-[11px] text-muted font-medium">Inicio:</span>
+          <input v-model="form.startDate" type="date" class="field" title="Fecha de inicio" />
+        </div>
+        <div class="flex items-center gap-1">
+          <span class="text-[11px] text-muted font-medium">Vence:</span>
+          <input v-model="form.dueDate" type="date" class="field" title="Fecha de vencimiento" />
+        </div>
       </div>
       <div class="mt-4 flex justify-end gap-2">
         <button type="button" class="ghost" @click="cancel">Cancelar</button>

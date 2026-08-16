@@ -7,6 +7,7 @@ import type {
   CreateTaskInput,
   Project,
   Task,
+  TaskAttachment,
   TaskFilters,
   TaskPriority,
   TaskStatus,
@@ -37,6 +38,7 @@ interface TaskRow {
   description: string
   status: TaskStatus
   priority: TaskPriority
+  start_date: string | null
   due_date: string | null
   position: number
   created_at: string
@@ -51,6 +53,17 @@ interface CommentRow {
   body: string
   created_at: string
   author?: { full_name: string | null } | null
+}
+
+interface AttachmentRow {
+  id: string
+  task_id: string
+  user_id: string
+  name: string
+  url: string
+  size: number
+  type: string
+  created_at: string
 }
 
 interface ActivityRow {
@@ -91,6 +104,7 @@ function mapTask(row: TaskRow): Task {
     description: row.description,
     status: row.status,
     priority: row.priority,
+    startDate: row.start_date,
     dueDate: row.due_date,
     position: row.position,
     createdAt: row.created_at,
@@ -110,6 +124,19 @@ function mapComment(row: CommentRow): Comment {
   }
 }
 
+function mapAttachment(row: AttachmentRow): TaskAttachment {
+  return {
+    id: row.id,
+    taskId: row.task_id,
+    userId: row.user_id,
+    name: row.name,
+    url: row.url,
+    size: row.size,
+    type: row.type,
+    createdAt: row.created_at,
+  }
+}
+
 function mapActivity(row: ActivityRow): Activity {
   return {
     id: row.id,
@@ -123,11 +150,62 @@ function mapActivity(row: ActivityRow): Activity {
   }
 }
 
+function toError(err: unknown, fallback: string): Error {
+  if (err instanceof Error) return err
+  if (err && typeof err === 'object' && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+    const msg = (err as { message: string }).message
+    const code = (err as { code?: string }).code
+    if (code === '42P01' || msg.includes('relation') || msg.includes('does not exist')) {
+      return new Error('La base de datos aún no ha sido creada. Ejecuta el archivo de migración SQL en el SQL Editor de Supabase.')
+    }
+    if (code === '42501' || msg.includes('row-level security policy')) {
+      if (msg.includes('profiles')) {
+        return new Error('Falta la política RLS de inserción en "profiles". Ejecuta en Supabase SQL Editor: CREATE POLICY "profiles_insert_own" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);')
+      }
+      return new Error('La política RLS de Supabase bloqueó la operación. Revisa los permisos en Supabase Dashboard.')
+    }
+    if (code === '23503' || msg.includes('violates foreign key constraint')) {
+      return new Error('El usuario no tiene un perfil registrado en la tabla "profiles".')
+    }
+    return new Error(msg)
+  }
+  return new Error(fallback)
+}
+
 async function requireUser() {
   const supabase = getSupabase()
   const { data, error } = await supabase.auth.getUser()
   if (error || !data.user) throw new Error('Sesión no válida')
   return data.user
+}
+
+async function ensureProfile(user: { id: string; email?: string | null; user_metadata?: Record<string, any> }) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (error) {
+    if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+      throw new Error('La base de datos aún no ha sido creada. Ejecuta el archivo de migración SQL en el SQL Editor de Supabase.')
+    }
+    throw toError(error, 'No se pudo verificar el perfil de usuario')
+  }
+
+  if (!data) {
+    const email = user.email ?? ''
+    const fullName = (user.user_metadata?.full_name as string | undefined) || (email ? email.split('@')[0] : 'Usuario')
+    const { error: insertErr } = await supabase.from('profiles').upsert({
+      id: user.id,
+      email,
+      full_name: fullName,
+    })
+    if (insertErr) {
+      throw toError(insertErr, 'No se pudo registrar el perfil de usuario')
+    }
+  }
 }
 
 async function loadProfile(userId: string): Promise<User> {
@@ -141,7 +219,7 @@ async function loadProfile(userId: string): Promise<User> {
     if (error?.code === '42P01' || error?.message?.includes('relation') || error?.message?.includes('does not exist')) {
       throw new Error('La base de datos aún no ha sido creada. Ejecuta el archivo de migración SQL en el SQL Editor de Supabase.')
     }
-    throw new Error(error?.message || 'No se pudo cargar el perfil')
+    throw toError(error, 'No se pudo cargar el perfil')
   }
   return mapUser(data as ProfileRow)
 }
@@ -158,7 +236,7 @@ async function writeActivity(
     type,
     meta,
   })
-  if (error) throw error
+  if (error) throw toError(error, 'No se pudo registrar la actividad')
 }
 
 export function createSupabaseBackend(): Backend {
@@ -258,12 +336,13 @@ export function createSupabaseBackend(): Backend {
         .from('projects')
         .select('*')
         .order('created_at', { ascending: true })
-      if (error) throw error
+      if (error) throw toError(error, 'No se pudieron obtener los proyectos')
       return (data as ProjectRow[]).map(mapProject)
     },
 
     async createProject(input: CreateProjectInput) {
       const user = await requireUser()
+      await ensureProfile(user)
       const { data, error } = await getSupabase()
         .from('projects')
         .insert({
@@ -273,7 +352,7 @@ export function createSupabaseBackend(): Backend {
         })
         .select()
         .single()
-      if (error || !data) throw error ?? new Error('No se pudo crear el proyecto')
+      if (error || !data) throw toError(error, 'No se pudo crear el proyecto')
       return mapProject(data as ProjectRow)
     },
 
@@ -292,7 +371,7 @@ export function createSupabaseBackend(): Backend {
       if (filters?.search) query = query.ilike('title', `%${filters.search}%`)
 
       const { data, error } = await query
-      if (error) throw error
+      if (error) throw toError(error, 'No se pudieron obtener las tareas')
       return (data as TaskRow[]).map(mapTask)
     },
 
@@ -302,12 +381,13 @@ export function createSupabaseBackend(): Backend {
         .select('*, project:projects(id, name, color)')
         .eq('id', id)
         .single()
-      if (error || !data) throw new Error('Tarea no encontrada')
+      if (error || !data) throw toError(error, 'Tarea no encontrada')
       return mapTask(data as TaskRow)
     },
 
     async createTask(input: CreateTaskInput) {
       const user = await requireUser()
+      await ensureProfile(user)
       const status = input.status ?? 'todo'
       const { data: last } = await getSupabase()
         .from('tasks')
@@ -326,12 +406,13 @@ export function createSupabaseBackend(): Backend {
           description: input.description?.trim() ?? '',
           status,
           priority: input.priority ?? 'medium',
+          start_date: input.startDate ?? null,
           due_date: input.dueDate ?? null,
           position: (last?.position ?? -1) + 1,
         })
         .select('*, project:projects(id, name, color)')
         .single()
-      if (error || !data) throw error ?? new Error('No se pudo crear la tarea')
+      if (error || !data) throw toError(error, 'No se pudo crear la tarea')
       const task = mapTask(data as TaskRow)
       await writeActivity(task, 'task.created', { title: task.title })
       return task
@@ -344,6 +425,7 @@ export function createSupabaseBackend(): Backend {
       if (input.description !== undefined) patch.description = input.description
       if (input.status !== undefined) patch.status = input.status
       if (input.priority !== undefined) patch.priority = input.priority
+      if (input.startDate !== undefined) patch.start_date = input.startDate
       if (input.dueDate !== undefined) patch.due_date = input.dueDate
       if (input.projectId !== undefined) patch.project_id = input.projectId
       if (input.position !== undefined) patch.position = input.position
@@ -368,6 +450,9 @@ export function createSupabaseBackend(): Backend {
       }
       if (input.priority !== undefined && input.priority !== current.priority) {
         await writeActivity(task, 'priority.changed', { from: current.priority, to: task.priority })
+      }
+      if (input.startDate !== undefined && input.startDate !== current.startDate) {
+        await writeActivity(task, 'start_date.changed', { from: current.startDate, to: task.startDate })
       }
       if (input.dueDate !== undefined && input.dueDate !== current.dueDate) {
         await writeActivity(task, 'due_date.changed', { from: current.dueDate, to: task.dueDate })
@@ -412,6 +497,56 @@ export function createSupabaseBackend(): Backend {
         preview: comment.body.slice(0, 140),
       })
       return comment
+    },
+
+    async listAttachments(taskId: string) {
+      const { data, error } = await getSupabase()
+        .from('attachments')
+        .select('*')
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: true })
+      if (error) throw error
+      return (data as AttachmentRow[]).map(mapAttachment)
+    },
+
+    async addAttachment(taskId: string, file: { name: string; url: string; size: number; type: string }) {
+      const user = await requireUser()
+      const { data, error } = await getSupabase()
+        .from('attachments')
+        .insert({
+          task_id: taskId,
+          user_id: user.id,
+          name: file.name,
+          url: file.url,
+          size: file.size,
+          type: file.type,
+        })
+        .select('*')
+        .single()
+      if (error || !data) throw error ?? new Error('No se pudo agregar el adjunto')
+      const attachment = mapAttachment(data as AttachmentRow)
+      await writeActivity({ id: taskId, userId: user.id }, 'attachment.added', {
+        name: attachment.name,
+      })
+      return attachment
+    },
+
+    async deleteAttachment(id: string) {
+      const user = await requireUser()
+      const { data: item } = await getSupabase()
+        .from('attachments')
+        .select('task_id, name')
+        .eq('id', id)
+        .maybeSingle()
+
+      const { error } = await getSupabase().from('attachments').delete().eq('id', id)
+      if (error) throw error
+
+      if (item) {
+        await writeActivity({ id: item.task_id, userId: user.id }, 'attachment.removed', {
+          name: item.name,
+        })
+      }
     },
 
     async listActivities(taskId: string) {

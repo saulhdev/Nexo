@@ -6,8 +6,11 @@ export type ActivityType =
   | 'task.updated'
   | 'status.changed'
   | 'priority.changed'
+  | 'start_date.changed'
   | 'due_date.changed'
   | 'comment.added'
+  | 'attachment.added'
+  | 'attachment.removed'
 
 export interface User {
   id: string
@@ -31,6 +34,7 @@ export interface Task {
   description: string
   status: TaskStatus
   priority: TaskPriority
+  startDate: string | null
   dueDate: string | null
   position: number
   createdAt: string
@@ -45,6 +49,17 @@ export interface Comment {
   body: string
   createdAt: string
   authorName?: string
+}
+
+export interface TaskAttachment {
+  id: string
+  taskId: string
+  userId: string
+  name: string
+  url: string
+  size: number
+  type: string
+  createdAt: string
 }
 
 export interface Activity {
@@ -70,6 +85,7 @@ export interface CreateTaskInput {
   description?: string
   status?: TaskStatus
   priority?: TaskPriority
+  startDate?: string | null
   dueDate?: string | null
   projectId: string
 }
@@ -79,6 +95,7 @@ export interface UpdateTaskInput {
   description?: string
   status?: TaskStatus
   priority?: TaskPriority
+  startDate?: string | null
   dueDate?: string | null
   projectId?: string
   position?: number

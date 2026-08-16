@@ -31,7 +31,8 @@ async function submit() {
     open.value = false
     emit('created', project.id)
   } catch (err) {
-    errorMessage.value = err instanceof Error ? err.message : 'No se pudo crear el proyecto'
+    const msg = err instanceof Error ? err.message : (err as { message?: string })?.message
+    errorMessage.value = msg || 'No se pudo crear el proyecto'
   } finally {
     submitting.value = false
   }

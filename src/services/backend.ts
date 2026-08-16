@@ -5,6 +5,7 @@ import type {
   CreateTaskInput,
   Project,
   Task,
+  TaskAttachment,
   TaskFilters,
   UpdateTaskInput,
   User,
@@ -31,6 +32,10 @@ export interface Backend {
 
   listComments(taskId: string): Promise<Comment[]>
   addComment(taskId: string, body: string): Promise<Comment>
+
+  listAttachments(taskId: string): Promise<TaskAttachment[]>
+  addAttachment(taskId: string, attachment: { name: string; url: string; size: number; type: string }): Promise<TaskAttachment>
+  deleteAttachment(id: string): Promise<void>
 
   listActivities(taskId: string): Promise<Activity[]>
   listRecentActivities(limit?: number): Promise<Activity[]>

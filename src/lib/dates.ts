@@ -86,6 +86,15 @@ export function dueLabel(value: string | null | undefined) {
   return formatDate(value)
 }
 
+export function formatDateRange(startDate: string | null | undefined, dueDate: string | null | undefined) {
+  if (startDate && dueDate) {
+    return `${formatDate(startDate)} – ${formatDate(dueDate)}`
+  }
+  if (startDate) return `Inicio: ${formatDate(startDate)}`
+  if (dueDate) return `Vence: ${formatDate(dueDate)}`
+  return 'Sin fecha'
+}
+
 export function isOverdue(value: string | null | undefined, status?: string) {
   if (!value || status === 'done') return false
   return daysFromToday(value) < 0

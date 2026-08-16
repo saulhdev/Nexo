@@ -19,10 +19,15 @@ function text() {
   if (type === 'priority.changed') {
     return `cambió la prioridad de ${PRIORITY_LABEL[meta.from as TaskPriority]} a ${PRIORITY_LABEL[meta.to as TaskPriority]}`
   }
+  if (type === 'start_date.changed') {
+    return `cambió la fecha de inicio a ${meta.to ? formatDate(String(meta.to)) : 'sin fecha'}`
+  }
   if (type === 'due_date.changed') {
-    return `cambió la fecha a ${meta.to ? formatDate(String(meta.to)) : 'sin fecha'}`
+    return `cambió la fecha de vencimiento a ${meta.to ? formatDate(String(meta.to)) : 'sin fecha'}`
   }
   if (type === 'comment.added') return 'comentó'
+  if (type === 'attachment.added') return `adjuntó "${meta.name || 'un archivo'}"`
+  if (type === 'attachment.removed') return `eliminó el adjunto "${meta.name || 'un archivo'}"`
   return 'actualizó la tarea'
 }
 </script>

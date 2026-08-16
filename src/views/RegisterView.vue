@@ -15,7 +15,8 @@ async function submit() {
     await auth.signUp(form.email, form.password, form.fullName)
     await router.push('/')
   } catch (err) {
-    notice.text = err instanceof Error ? err.message : 'No se pudo crear la cuenta'
+    const msg = err instanceof Error ? err.message : (err as { message?: string })?.message
+    notice.text = msg || 'No se pudo crear la cuenta'
   }
 }
 </script>

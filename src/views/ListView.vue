@@ -6,7 +6,7 @@ import PriorityBadge from '@/components/PriorityBadge.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
 import { PRIORITIES, STATUSES } from '@/constants'
-import { dueLabel, isOverdue } from '@/lib/dates'
+import { dueLabel, formatDate, isOverdue } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
 
 const workspace = useWorkspaceStore()
@@ -72,7 +72,8 @@ function open(id: string) {
             <th class="px-4 py-3 font-semibold">Tarea</th>
             <th class="px-4 py-3 font-semibold">Estado</th>
             <th class="px-4 py-3 font-semibold">Prioridad</th>
-            <th class="px-4 py-3 font-semibold">Fecha</th>
+            <th class="px-4 py-3 font-semibold">Inicio</th>
+            <th class="px-4 py-3 font-semibold">Vencimiento</th>
             <th class="px-4 py-3 font-semibold">Proyecto</th>
           </tr>
         </thead>
@@ -91,7 +92,10 @@ function open(id: string) {
             </td>
             <td class="px-4 py-3"><StatusBadge :status="task.status" /></td>
             <td class="px-4 py-3"><PriorityBadge :priority="task.priority" /></td>
-            <td class="px-4 py-3">
+            <td class="px-4 py-3 text-xs text-muted">
+              {{ task.startDate ? formatDate(task.startDate) : 'Sin fecha' }}
+            </td>
+            <td class="px-4 py-3 text-xs">
               <span :class="isOverdue(task.dueDate, task.status) ? 'font-medium text-rose-600' : 'text-muted'">
                 {{ dueLabel(task.dueDate) }}
               </span>

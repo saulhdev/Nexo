@@ -24,13 +24,21 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
+  function getErrorMessage(err: unknown, fallback: string): string {
+    if (err instanceof Error) return err.message
+    if (err && typeof err === 'object' && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+      return (err as { message: string }).message
+    }
+    return fallback
+  }
+
   async function signIn(email: string, password: string) {
     loading.value = true
     error.value = ''
     try {
       user.value = await backend.signIn(email, password)
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'No se pudo iniciar sesión'
+      error.value = getErrorMessage(err, 'No se pudo iniciar sesión')
       throw err
     } finally {
       loading.value = false
@@ -43,7 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       user.value = await backend.signUp(email, password, fullName)
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'No se pudo crear la cuenta'
+      error.value = getErrorMessage(err, 'No se pudo crear la cuenta')
       throw err
     } finally {
       loading.value = false
@@ -61,7 +69,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       user.value = await backend.updateProfile(input)
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'No se pudo actualizar el perfil'
+      error.value = getErrorMessage(err, 'No se pudo actualizar el perfil')
       throw err
     } finally {
       loading.value = false

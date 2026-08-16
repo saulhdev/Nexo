@@ -10,6 +10,7 @@ import type {
   DashboardStats,
   Project,
   Task,
+  TaskAttachment,
   TaskFilters,
   TaskStatus,
   UpdateTaskInput,
@@ -20,6 +21,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const projects = ref<Project[]>([])
   const tasks = ref<Task[]>([])
   const comments = ref<Comment[]>([])
+  const attachments = ref<TaskAttachment[]>([])
   const activities = ref<Activity[]>([])
   const recentActivities = ref<Activity[]>([])
   const activeTaskId = ref<string | null>(null)
@@ -94,6 +96,14 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       .sort((a, b) => a.position - b.position)
   }
 
+  function getErrorMessage(err: unknown, fallback: string): string {
+    if (err instanceof Error) return err.message
+    if (err && typeof err === 'object' && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+      return (err as { message: string }).message
+    }
+    return fallback
+  }
+
   async function bootstrap() {
     loading.value = true
     error.value = ''
@@ -107,7 +117,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       tasks.value = nextTasks
       recentActivities.value = nextActivity
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'No se pudieron cargar los datos'
+      error.value = getErrorMessage(err, 'No se pudieron cargar los datos')
     } finally {
       loading.value = false
     }
@@ -120,7 +130,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       projects.value.push(project)
       return project
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'No se pudo crear el proyecto'
+      error.value = getErrorMessage(err, 'No se pudo crear el proyecto')
       throw err
     }
   }
@@ -151,6 +161,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     if (activeTaskId.value === id) {
       activeTaskId.value = null
       comments.value = []
+      attachments.value = []
       activities.value = []
     }
   }
@@ -173,7 +184,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       await refreshRecent()
     } catch (err) {
       tasks.value = previous
-      error.value = err instanceof Error ? err.message : 'No se pudo mover la tarea'
+      error.value = getErrorMessage(err, 'No se pudo mover la tarea')
     }
   }
 
@@ -185,20 +196,23 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   function closeTask() {
     activeTaskId.value = null
     comments.value = []
+    attachments.value = []
     activities.value = []
   }
 
   async function loadDetail(id: string) {
     detailLoading.value = true
     try {
-      const [task, nextComments, nextActivities] = await Promise.all([
+      const [task, nextComments, nextAttachments, nextActivities] = await Promise.all([
         backend.getTask(id),
         backend.listComments(id),
+        backend.listAttachments(id),
         backend.listActivities(id),
       ])
       const index = tasks.value.findIndex((item) => item.id === id)
       if (index >= 0) tasks.value[index] = task
       comments.value = nextComments
+      attachments.value = nextAttachments
       activities.value = nextActivities
     } finally {
       detailLoading.value = false
@@ -209,6 +223,34 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     if (!activeTaskId.value) return
     const comment = await backend.addComment(activeTaskId.value, body)
     comments.value.push(comment)
+    await loadDetail(activeTaskId.value)
+    await refreshRecent()
+  }
+
+  async function uploadAttachment(file: File) {
+    if (!activeTaskId.value) return
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(file)
+    })
+
+    const attachment = await backend.addAttachment(activeTaskId.value, {
+      name: file.name,
+      url: dataUrl,
+      size: file.size,
+      type: file.type || 'application/octet-stream',
+    })
+    attachments.value.push(attachment)
+    await loadDetail(activeTaskId.value)
+    await refreshRecent()
+  }
+
+  async function deleteAttachment(id: string) {
+    if (!activeTaskId.value) return
+    await backend.deleteAttachment(id)
+    attachments.value = attachments.value.filter((item) => item.id !== id)
     await loadDetail(activeTaskId.value)
     await refreshRecent()
   }
@@ -225,6 +267,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     projects,
     tasks,
     comments,
+    attachments,
     activities,
     recentActivities,
     activeTaskId,
@@ -246,6 +289,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     openTask,
     closeTask,
     addComment,
+    uploadAttachment,
+    deleteAttachment,
     setFilter,
   }
 })

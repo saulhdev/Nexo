@@ -30,6 +30,7 @@ create table public.tasks (
   description text not null default '',
   status public.task_status not null default 'todo',
   priority public.task_priority not null default 'medium',
+  start_date date,
   due_date date,
   position integer not null default 0,
   created_at timestamptz not null default now(),
@@ -53,12 +54,25 @@ create table public.activities (
   created_at timestamptz not null default now()
 );
 
+create table public.attachments (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references public.tasks (id) on delete cascade,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  name text not null,
+  url text not null,
+  size integer not null default 0,
+  type text not null default 'application/octet-stream',
+  created_at timestamptz not null default now()
+);
+
 create index tasks_user_status_idx on public.tasks (user_id, status);
 create index tasks_project_idx on public.tasks (project_id);
+create index tasks_start_date_idx on public.tasks (start_date);
 create index tasks_due_date_idx on public.tasks (due_date);
 create index comments_task_idx on public.comments (task_id, created_at);
 create index activities_task_idx on public.activities (task_id, created_at desc);
 create index activities_user_idx on public.activities (user_id, created_at desc);
+create index attachments_task_idx on public.attachments (task_id, created_at);
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -104,11 +118,10 @@ alter table public.projects enable row level security;
 alter table public.tasks enable row level security;
 alter table public.comments enable row level security;
 alter table public.activities enable row level security;
+alter table public.attachments enable row level security;
 
-create policy "profiles_select_own" on public.profiles
-  for select using (auth.uid() = id);
-create policy "profiles_update_own" on public.profiles
-  for update using (auth.uid() = id);
+create policy "profiles_all_own" on public.profiles
+  for all using (auth.uid() = id) with check (auth.uid() = id);
 
 create policy "projects_all_own" on public.projects
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -120,4 +133,7 @@ create policy "comments_all_own" on public.comments
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 create policy "activities_all_own" on public.activities
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "attachments_all_own" on public.attachments
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

@@ -5,7 +5,7 @@ import draggable from 'vuedraggable'
 import PriorityBadge from '@/components/PriorityBadge.vue'
 import TaskComposer from '@/components/TaskComposer.vue'
 import { STATUSES } from '@/constants'
-import { dueLabel, isOverdue } from '@/lib/dates'
+import { formatDateRange, isOverdue } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
 import type { Task, TaskStatus } from '@/types'
 
@@ -102,9 +102,9 @@ function open(id: string) {
                   class="text-[11px]"
                   :class="isOverdue(element.dueDate, element.status) ? 'font-medium text-rose-600' : 'text-muted'"
                 >
-                  {{ dueLabel(element.dueDate) }}
+                  {{ formatDateRange(element.startDate, element.dueDate) }}
                 </span>
-                </div>
+              </div>
             </article>
           </template>
         </draggable>

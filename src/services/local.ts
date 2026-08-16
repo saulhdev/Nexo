@@ -7,6 +7,7 @@ import type {
   CreateTaskInput,
   Project,
   Task,
+  TaskAttachment,
   TaskFilters,
   UpdateTaskInput,
   User,
@@ -21,6 +22,7 @@ interface Db {
   projects: Project[]
   tasks: Task[]
   comments: Comment[]
+  attachments: TaskAttachment[]
   activities: Activity[]
 }
 
@@ -43,18 +45,18 @@ function seed(): Db {
   ]
 
   const tasks: Task[] = [
-    t('t1', 'proj-producto', 'Definir alcance del MVP', 'Lista de vistas, campos de tarea y flujo de comentarios.', 'done', 'high', addDaysISO(-2), 0),
-    t('t2', 'proj-producto', 'Diseñar dashboard de estadísticas', 'Tarjetas de estado, vencidas y actividad reciente.', 'in_review', 'medium', addDaysISO(1), 0),
-    t('t3', 'proj-producto', 'Implementar vista de lista', 'Crear, filtrar y editar tareas desde una tabla.', 'in_progress', 'high', todayISO(), 0),
-    t('t4', 'proj-producto', 'Tablero kanban con arrastre', 'Mover tarjetas entre columnas actualiza el estado.', 'in_progress', 'urgent', addDaysISO(2), 1),
-    t('t5', 'proj-producto', 'Panel de detalle con actividad', 'Comentarios y bitácora con fecha en cada tarea.', 'todo', 'high', addDaysISO(3), 0),
-    t('t6', 'proj-ops', 'Conectar proyecto de Supabase', 'Auth, tablas y políticas RLS para datos reales.', 'todo', 'medium', addDaysISO(5), 1),
-    t('t7', 'proj-ops', 'Revisar políticas de acceso', 'Cada usuario solo ve sus proyectos y tareas.', 'todo', 'low', addDaysISO(8), 2),
-    t('t8', 'proj-ops', 'Preparar demo para el equipo', 'Datos de ejemplo y recorrido por las tres vistas.', 'todo', 'medium', addDaysISO(-1), 3),
-    t('t9', 'proj-personal', 'Actualizar portafolio', 'Añadir captura de Nexo cuando el MVP esté listo.', 'todo', 'low', addDaysISO(12), 0),
-    t('t10', 'proj-producto', 'Ajustar vacíos y estados de error', 'Lista vacía, sin resultados y fallos de red.', 'in_review', 'medium', addDaysISO(4), 1),
-    t('t11', 'proj-personal', 'Leer notas de Monday y Asana', 'Tomar ideas de densidad y de la línea de tiempo.', 'done', 'low', addDaysISO(-6), 1),
-    t('t12', 'proj-ops', 'Documentar cómo levantar el proyecto', 'README con modo local y pasos de Supabase.', 'done', 'medium', addDaysISO(-3), 0),
+    t('t1', 'proj-producto', 'Definir alcance del MVP', 'Lista de vistas, campos de tarea y flujo de comentarios.', 'done', 'high', addDaysISO(-5), addDaysISO(-2), 0),
+    t('t2', 'proj-producto', 'Diseñar dashboard de estadísticas', 'Tarjetas de estado, vencidas y actividad reciente.', 'in_review', 'medium', addDaysISO(-2), addDaysISO(1), 0),
+    t('t3', 'proj-producto', 'Implementar vista de lista', 'Crear, filtrar y editar tareas desde una tabla.', 'in_progress', 'high', addDaysISO(-1), todayISO(), 0),
+    t('t4', 'proj-producto', 'Tablero kanban con arrastre', 'Mover tarjetas entre columnas actualiza el estado.', 'in_progress', 'urgent', todayISO(), addDaysISO(2), 1),
+    t('t5', 'proj-producto', 'Panel de detalle con actividad', 'Comentarios y bitácora con fecha en cada tarea.', 'todo', 'high', todayISO(), addDaysISO(3), 0),
+    t('t6', 'proj-ops', 'Conectar proyecto de Supabase', 'Auth, tablas y políticas RLS para datos reales.', 'todo', 'medium', addDaysISO(1), addDaysISO(5), 1),
+    t('t7', 'proj-ops', 'Revisar políticas de acceso', 'Cada usuario solo ve sus proyectos y tareas.', 'todo', 'low', addDaysISO(2), addDaysISO(8), 2),
+    t('t8', 'proj-ops', 'Preparar demo para el equipo', 'Datos de ejemplo y recorrido por las tres vistas.', 'todo', 'medium', addDaysISO(-4), addDaysISO(-1), 3),
+    t('t9', 'proj-personal', 'Actualizar portafolio', 'Añadir captura de Nexo cuando el MVP esté listo.', 'todo', 'low', addDaysISO(5), addDaysISO(12), 0),
+    t('t10', 'proj-producto', 'Ajustar vacíos y estados de error', 'Lista vacía, sin resultados y fallos de red.', 'in_review', 'medium', addDaysISO(1), addDaysISO(4), 1),
+    t('t11', 'proj-personal', 'Leer notas de Monday y Asana', 'Tomar ideas de densidad y de la línea de tiempo.', 'done', 'low', addDaysISO(-10), addDaysISO(-6), 1),
+    t('t12', 'proj-ops', 'Documentar cómo levantar el proyecto', 'README con modo local y pasos de Supabase.', 'done', 'medium', addDaysISO(-7), addDaysISO(-3), 0),
   ]
 
   const comments: Comment[] = [
@@ -73,7 +75,9 @@ function seed(): Db {
     a('a7', 't8', 'due_date.changed', { from: addDaysISO(2), to: addDaysISO(-1) }, hoursAgo(2)),
   ]
 
-  return { user, projects, tasks, comments, activities }
+  const attachments: TaskAttachment[] = []
+
+  return { user, projects, tasks, comments, attachments, activities }
 
   function t(
     id: string,
@@ -82,6 +86,7 @@ function seed(): Db {
     description: string,
     status: Task['status'],
     priority: Task['priority'],
+    startDate: string | null,
     dueDate: string | null,
     position: number,
   ): Task {
@@ -93,6 +98,7 @@ function seed(): Db {
       description,
       status,
       priority,
+      startDate,
       dueDate,
       position,
       createdAt,
@@ -139,7 +145,11 @@ function hoursAgo(hours: number) {
 function load(): Db {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as Db
+    if (raw) {
+      const parsed = JSON.parse(raw) as Db
+      if (!parsed.attachments) parsed.attachments = []
+      return parsed
+    }
   } catch {
     /* ignore corrupt storage */
   }
@@ -276,6 +286,7 @@ export function createLocalBackend(): Backend {
         description: input.description?.trim() ?? '',
         status: input.status ?? 'todo',
         priority: input.priority ?? 'medium',
+        startDate: input.startDate ?? null,
         dueDate: input.dueDate ?? null,
         position: siblings.length,
         createdAt: nowISO(),
@@ -308,6 +319,10 @@ export function createLocalBackend(): Backend {
         pushActivity(db, task, 'priority.changed', { from: task.priority, to: input.priority })
         task.priority = input.priority
       }
+      if (input.startDate !== undefined && input.startDate !== task.startDate) {
+        pushActivity(db, task, 'start_date.changed', { from: task.startDate, to: input.startDate })
+        task.startDate = input.startDate
+      }
       if (input.dueDate !== undefined && input.dueDate !== task.dueDate) {
         pushActivity(db, task, 'due_date.changed', { from: task.dueDate, to: input.dueDate })
         task.dueDate = input.dueDate
@@ -323,6 +338,7 @@ export function createLocalBackend(): Backend {
       const db = load()
       db.tasks = db.tasks.filter((item) => item.id !== id)
       db.comments = db.comments.filter((item) => item.taskId !== id)
+      db.attachments = (db.attachments || []).filter((item) => item.taskId !== id)
       db.activities = db.activities.filter((item) => item.taskId !== id)
       save(db)
     },
@@ -361,6 +377,46 @@ export function createLocalBackend(): Backend {
       pushActivity(db, task, 'comment.added', { preview: comment.body.slice(0, 140) })
       save(db)
       return comment
+    },
+
+    async listAttachments(taskId: string) {
+      return (load().attachments || [])
+        .filter((item) => item.taskId === taskId)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    },
+
+    async addAttachment(taskId: string, file: { name: string; url: string; size: number; type: string }) {
+      const db = load()
+      const task = db.tasks.find((item) => item.id === taskId)
+      if (!task) throw new Error('Tarea no encontrada')
+      if (!db.attachments) db.attachments = []
+      const attachment: TaskAttachment = {
+        id: crypto.randomUUID(),
+        taskId,
+        userId: db.user.id,
+        name: file.name,
+        url: file.url,
+        size: file.size,
+        type: file.type,
+        createdAt: nowISO(),
+      }
+      db.attachments.push(attachment)
+      pushActivity(db, task, 'attachment.added', { name: attachment.name })
+      save(db)
+      return attachment
+    },
+
+    async deleteAttachment(id: string) {
+      const db = load()
+      if (!db.attachments) db.attachments = []
+      const attachment = db.attachments.find((item) => item.id === id)
+      if (!attachment) return
+      const task = db.tasks.find((item) => item.id === attachment.taskId)
+      db.attachments = db.attachments.filter((item) => item.id !== id)
+      if (task) {
+        pushActivity(db, task, 'attachment.removed', { name: attachment.name })
+      }
+      save(db)
     },
 
     async listActivities(taskId: string) {

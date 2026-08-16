@@ -60,7 +60,8 @@ async function savePassword() {
       securitySuccess.value = ''
     }, 4000)
   } catch (err) {
-    securityError.value = err instanceof Error ? err.message : 'Error al actualizar contraseña'
+    const msg = err instanceof Error ? err.message : (err as { message?: string })?.message
+    securityError.value = msg || 'Error al actualizar contraseña'
   }
 }
 </script>
