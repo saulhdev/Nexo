@@ -9,7 +9,7 @@ import { useI18n } from './i18n'
 import './style.css'
 
 const esLocale = {
-  firstDayOfWeek: 1,
+  firstDayOfWeek: 0,
   dayNames: ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'],
   dayNamesShort: ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'],
   dayNamesMin: ['D', 'L', 'M', 'X', 'J', 'V', 'S'],

@@ -118,8 +118,8 @@ export function isDueSoon(value: string | null | undefined, status?: string) {
 
 export function startOfWeekISO() {
   const now = new Date()
-  const day = now.getDay() || 7
-  const monday = new Date(now)
-  monday.setDate(now.getDate() - day + 1)
-  return toISODate(monday)
+  const day = now.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const sunday = new Date(now)
+  sunday.setDate(now.getDate() - day)
+  return toISODate(sunday)
 }
