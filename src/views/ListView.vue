@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { CheckSquare, Inbox, Pencil, Trash2 } from 'lucide-vue-next'
+import { CheckSquare, Inbox, Pencil, Trash2 } from '@lucide/vue'
 import CustomDatePicker from '@/components/CustomDatePicker.vue'
 import CustomSelect from '@/components/CustomSelect.vue'
 import EmptyState from '@/components/EmptyState.vue'

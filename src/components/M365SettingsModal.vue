@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { AlertCircle, Calendar, CheckCircle2, ExternalLink, HelpCircle, RefreshCw, Trash2, X } from 'lucide-vue-next'
+import { AlertCircle, Calendar, CheckCircle2, ExternalLink, HelpCircle, RefreshCw, Trash2, X } from '@lucide/vue'
 import { useI18n } from '@/i18n'
 import { formatDateTime } from '@/lib/dates'
 import { useM365CalendarStore } from '@/stores/m365Calendar'

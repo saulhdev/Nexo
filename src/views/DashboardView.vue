@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { AlertTriangle, CheckCircle2, Clock3, ListTodo } from 'lucide-vue-next'
+import { AlertTriangle, CheckCircle2, Clock3, ListTodo } from '@lucide/vue'
 import ActivityItem from '@/components/ActivityItem.vue'
 import PriorityBadge from '@/components/PriorityBadge.vue'
 import StatusBadge from '@/components/StatusBadge.vue'

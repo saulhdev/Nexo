@@ -1,7 +1,7 @@
 import { createPinia } from 'pinia'
 import { createApp, watch } from 'vue'
 import PrimeVue from 'primevue/config'
-import Aura from '@primevue/themes/aura'
+import Aura from '@primeuix/themes/aura'
 import 'primeicons/primeicons.css'
 import App from './App.vue'
 import router from './router'

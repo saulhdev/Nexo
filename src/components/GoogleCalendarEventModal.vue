@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Calendar, Clock, Info, MapPin, X } from 'lucide-vue-next'
+import { Calendar, Clock, Info, MapPin, X } from '@lucide/vue'
 import { useI18n } from '@/i18n'
 import { formatDate } from '@/lib/dates'
 import type { GoogleCalendarEvent } from '@/services/googleCalendar'

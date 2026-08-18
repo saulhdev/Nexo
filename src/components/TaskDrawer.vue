@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Download, FileText, Grid2x2, Paperclip, Plus, Trash2, Upload, X } from 'lucide-vue-next'
+import { Download, FileText, Grid2x2, Paperclip, Plus, Trash2, Upload, X } from '@lucide/vue'
 import CustomDatePicker from '@/components/CustomDatePicker.vue'
 import CustomSelect from '@/components/CustomSelect.vue'
 import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'

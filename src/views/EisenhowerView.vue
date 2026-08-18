@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Pencil, Plus, Search } from 'lucide-vue-next'
+import { Pencil, Plus, Search } from '@lucide/vue'
 import draggable from 'vuedraggable'
 import CustomSelect from '@/components/CustomSelect.vue'
 import PriorityBadge from '@/components/PriorityBadge.vue'

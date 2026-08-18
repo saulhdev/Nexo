@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { Bell, Check, Clock, AlertTriangle, CheckCircle2 } from 'lucide-vue-next'
+import { Bell, Check, Clock, AlertTriangle, CheckCircle2 } from '@lucide/vue'
 import { useWorkspaceStore } from '@/stores/workspace'
 import { useI18n } from '@/i18n'
 import { isDueSoon, isOverdue } from '@/lib/dates'

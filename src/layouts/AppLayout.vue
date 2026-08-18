@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import { CalendarDays, ChevronDown, Columns3, Globe, Grid2x2, LayoutDashboard, ListChecks, LogOut, Pencil, Plus, User } from 'lucide-vue-next'
+import { CalendarDays, ChevronDown, Columns3, Globe, Grid2x2, LayoutDashboard, ListChecks, LogOut, Pencil, Plus, User } from '@lucide/vue'
 import { APP_NAME } from '@/constants'
 import { useI18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'

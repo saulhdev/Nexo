@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Calendar as CalendarIcon, CalendarOff, ChevronLeft, ChevronRight, Eye, EyeOff, RefreshCw, Settings } from 'lucide-vue-next'
+import { Calendar as CalendarIcon, CalendarOff, ChevronLeft, ChevronRight, Eye, EyeOff, RefreshCw, Settings } from '@lucide/vue'
 import GoogleCalendarEventModal from '@/components/GoogleCalendarEventModal.vue'
 import GoogleCalendarSettingsModal from '@/components/GoogleCalendarSettingsModal.vue'
 import M365EventModal from '@/components/M365EventModal.vue'

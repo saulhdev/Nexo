@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { CheckSquare, Pencil, Plus } from 'lucide-vue-next'
+import { CheckSquare, Pencil, Plus } from '@lucide/vue'
 import draggable from 'vuedraggable'
 import PriorityBadge from '@/components/PriorityBadge.vue'
 import TaskComposer from '@/components/TaskComposer.vue'

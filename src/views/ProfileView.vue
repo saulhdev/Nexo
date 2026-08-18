@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref, watchEffect } from 'vue'
-import { CheckCircle2, KeyRound, Mail, User as UserIcon } from 'lucide-vue-next'
+import { CheckCircle2, KeyRound, Mail, User as UserIcon } from '@lucide/vue'
 import { useI18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 
