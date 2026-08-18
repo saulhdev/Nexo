@@ -6,6 +6,7 @@ import CustomSelect from '@/components/CustomSelect.vue'
 import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
 import { useI18n } from '@/i18n'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useTeamsStore } from '@/stores/teams'
 import type { Task, TaskPriority, TaskStatus } from '@/types'
 import RichTextEditor from '@/components/RichTextEditor.vue'
 
@@ -28,6 +29,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{ created: [id: string]; updated: [id: string]; cancel: [] }>()
 const workspace = useWorkspaceStore()
+const teamsStore = useTeamsStore()
 const open = ref(props.autoOpen)
 const submitting = ref(false)
 const editingTaskId = ref<string | null>(null)
@@ -49,6 +51,7 @@ const form = reactive({
   dueDate: '',
   projectId: '',
   assigneeId: '',
+  teamId: '',
 })
 
 const isEditing = computed(() => Boolean(editingTaskId.value))
@@ -66,6 +69,11 @@ const projectOptions = computed(() =>
 const assigneeOptions = computed(() => [
   { label: t('common.unassigned'), value: '' },
   ...workspace.users.map((u) => ({ label: u.fullName, value: u.id })),
+])
+
+const teamOptions = computed(() => [
+  { label: t('teams.noTeam'), value: '' },
+  ...teamsStore.teams.map((tm) => ({ label: tm.name, value: tm.id })),
 ])
 
 
@@ -98,6 +106,7 @@ function editTask(task: Task) {
   form.dueDate = task.dueDate ?? ''
   form.projectId = task.projectId
   form.assigneeId = task.assigneeId ?? ''
+  form.teamId = task.teamId ?? ''
   open.value = true
 }
 
@@ -194,6 +203,7 @@ async function submit() {
         dueDate: form.dueDate || null,
         projectId: form.projectId,
         assigneeId: form.assigneeId || null,
+        teamId: form.teamId || null,
       })
 
       if (pendingFiles.value.length > 0) {
@@ -217,6 +227,7 @@ async function submit() {
         dueDate: form.dueDate || null,
         projectId: form.projectId,
         assigneeId: form.assigneeId || null,
+        teamId: form.teamId || null,
       })
 
       if (pendingFiles.value.length > 0) {
@@ -329,6 +340,16 @@ defineExpose({ start, editTask })
                     :options="STATUSES"
                   />
                 </div>
+              </div>
+
+              <!-- Team selector -->
+              <div v-if="teamOptions.length > 1">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-muted mb-1.5">{{ t('teams.team') }}</label>
+                <CustomSelect
+                  v-model="form.teamId"
+                  :options="teamOptions"
+                  filter
+                />
               </div>
 
               <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">

@@ -40,6 +40,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     priority: 'all',
     projectId: 'all',
     assigneeId: 'all',
+    teamId: 'all',
   })
 
   const activeTask = computed(() => tasks.value.find((task) => task.id === activeTaskId.value) ?? null)
@@ -57,8 +58,11 @@ export const useWorkspaceStore = defineStore('workspace', () => {
           return false
         }
       }
+      if (filters.value.teamId !== 'all') {
+        if (task.teamId !== filters.value.teamId) return false
+      }
       if (q) {
-        const hay = `${task.title} ${task.description} ${task.project?.name ?? ''} ${task.assignee?.fullName ?? ''}`.toLowerCase()
+        const hay = `${task.title} ${task.description} ${task.project?.name ?? ''} ${task.assignee?.fullName ?? ''} ${task.team?.name ?? ''}`.toLowerCase()
         if (!hay.includes(q)) return false
       }
       return true

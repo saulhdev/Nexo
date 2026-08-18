@@ -8,6 +8,7 @@ import type {
   CreateProjectInput,
   CreateSubtaskInput,
   CreateTaskInput,
+  CreateTeamInput,
   Project,
   Subtask,
   Task,
@@ -15,9 +16,12 @@ import type {
   TaskFilters,
   TaskPriority,
   TaskStatus,
+  Team,
+  TeamMember,
   UpdateProjectInput,
   UpdateSubtaskInput,
   UpdateTaskInput,
+  UpdateTeamInput,
   User,
 } from '@/types'
 import type { Backend } from '@/services/backend'
@@ -26,6 +30,23 @@ interface ProfileRow {
   id: string
   email: string
   full_name: string | null
+  is_admin?: boolean | null
+}
+
+interface TeamRow {
+  id: string
+  name: string
+  owner_id: string
+  created_at: string
+  member_count?: number
+}
+
+interface TeamMemberRow {
+  team_id: string
+  user_id: string
+  role: 'owner' | 'member'
+  joined_at: string
+  user?: { id: string; email: string; full_name: string | null } | null
 }
 
 interface ProjectRow {
@@ -41,6 +62,7 @@ interface TaskRow {
   project_id: string
   user_id: string
   assignee_id?: string | null
+  team_id?: string | null
   title: string
   description: string
   status: TaskStatus
@@ -54,6 +76,7 @@ interface TaskRow {
   updated_at: string
   project?: { id: string; name: string; color: string } | null
   assignee?: { id: string; email: string; full_name: string | null } | null
+  team?: { id: string; name: string } | null
 }
 
 interface CommentRow {
@@ -103,6 +126,33 @@ function mapUser(row: ProfileRow): User {
     id: row.id,
     email: row.email,
     fullName: row.full_name || row.email.split('@')[0],
+    isAdmin: row.is_admin ?? false,
+  }
+}
+
+function mapTeam(row: TeamRow): Team {
+  return {
+    id: row.id,
+    name: row.name,
+    ownerId: row.owner_id,
+    createdAt: row.created_at,
+    memberCount: row.member_count,
+  }
+}
+
+function mapTeamMember(row: TeamMemberRow): TeamMember {
+  return {
+    teamId: row.team_id,
+    userId: row.user_id,
+    role: row.role,
+    joinedAt: row.joined_at,
+    user: row.user
+      ? {
+          id: row.user.id,
+          email: row.user.email,
+          fullName: row.user.full_name || row.user.email.split('@')[0],
+        }
+      : undefined,
   }
 }
 
@@ -124,6 +174,7 @@ function mapTask(row: TaskRow & { subtasks?: Array<{ id: string; completed: bool
     projectId: row.project_id,
     userId: row.user_id,
     assigneeId: row.assignee_id ?? null,
+    teamId: row.team_id ?? null,
     title: row.title,
     description: row.description,
     status: row.status,
@@ -143,6 +194,7 @@ function mapTask(row: TaskRow & { subtasks?: Array<{ id: string; completed: bool
           fullName: row.assignee.full_name || row.assignee.email.split('@')[0],
         }
       : undefined,
+    team: row.team ?? undefined,
     subtaskCount: subtasksList.length,
     completedSubtaskCount: subtasksList.filter((s) => s.completed).length,
   }
@@ -260,7 +312,7 @@ async function loadProfile(userId: string): Promise<User> {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, full_name')
+    .select('id, email, full_name, is_admin')
     .eq('id', userId)
     .single()
   if (error || !data) {
@@ -386,7 +438,7 @@ export function createSupabaseBackend(): Backend {
     async listUsers() {
       const { data, error } = await getSupabase()
         .from('profiles')
-        .select('id, email, full_name')
+        .select('id, email, full_name, is_admin')
         .order('full_name', { ascending: true })
       if (error) throw toError(error, 'No se pudieron obtener los usuarios')
       return (data as ProfileRow[]).map(mapUser)
@@ -435,7 +487,7 @@ export function createSupabaseBackend(): Backend {
     async listTasks(filters?: TaskFilters) {
       let query = getSupabase()
         .from('tasks')
-        .select('*, project:projects(id, name, color), assignee:profiles!assignee_id(id, email, full_name)')
+        .select('*, project:projects(id, name, color), assignee:profiles!assignee_id(id, email, full_name), team:teams(id, name)')
         .order('position', { ascending: true })
         .order('created_at', { ascending: true })
 
@@ -451,6 +503,9 @@ export function createSupabaseBackend(): Backend {
           query = query.eq('assignee_id', filters.assigneeId)
         }
       }
+      if (filters?.teamId && filters.teamId !== 'all') {
+        query = query.eq('team_id', filters.teamId)
+      }
       if (filters?.search) query = query.ilike('title', `%${filters.search}%`)
 
       const { data, error } = await query
@@ -461,7 +516,7 @@ export function createSupabaseBackend(): Backend {
     async getTask(id: string) {
       const { data, error } = await getSupabase()
         .from('tasks')
-        .select('*, project:projects(id, name, color), assignee:profiles!assignee_id(id, email, full_name)')
+        .select('*, project:projects(id, name, color), assignee:profiles!assignee_id(id, email, full_name), team:teams(id, name)')
         .eq('id', id)
         .single()
       if (error || !data) throw toError(error, 'Tarea no encontrada')
@@ -491,6 +546,7 @@ export function createSupabaseBackend(): Backend {
           project_id: input.projectId,
           user_id: user.id,
           assignee_id: input.assigneeId ?? null,
+          team_id: input.teamId ?? null,
           title: input.title.trim(),
           description: input.description?.trim() ?? '',
           status,
@@ -501,7 +557,7 @@ export function createSupabaseBackend(): Backend {
           due_date: input.dueDate ?? null,
           position: (last?.position ?? -1) + 1,
         })
-        .select('*, project:projects(id, name, color), assignee:profiles!assignee_id(id, email, full_name)')
+        .select('*, project:projects(id, name, color), assignee:profiles!assignee_id(id, email, full_name), team:teams(id, name)')
         .single()
       if (error || !data) throw toError(error, 'No se pudo crear la tarea')
       const task = mapTask(data as TaskRow)
@@ -526,12 +582,13 @@ export function createSupabaseBackend(): Backend {
       if (input.projectId !== undefined) patch.project_id = input.projectId
       if (input.position !== undefined) patch.position = input.position
       if (input.assigneeId !== undefined) patch.assignee_id = input.assigneeId
+      if (input.teamId !== undefined) patch.team_id = input.teamId
 
       const { data, error } = await getSupabase()
         .from('tasks')
         .update(patch)
         .eq('id', id)
-        .select('*, project:projects(id, name, color), assignee:profiles!assignee_id(id, email, full_name)')
+        .select('*, project:projects(id, name, color), assignee:profiles!assignee_id(id, email, full_name), team:teams(id, name)')
         .single()
       if (error || !data) throw error ?? new Error('No se pudo actualizar la tarea')
       const task = mapTask(data as TaskRow)
@@ -770,6 +827,91 @@ export function createSupabaseBackend(): Backend {
         .limit(limit)
       if (error) throw error
       return (data as ActivityRow[]).map(mapActivity)
+    },
+
+    // ── Teams ──────────────────────────────────────────────────────────────────
+
+    async listTeams() {
+      const { data, error } = await getSupabase()
+        .from('teams')
+        .select('id, name, owner_id, created_at, member_count:team_members(count)')
+        .order('created_at', { ascending: true })
+      if (error) throw toError(error, 'No se pudieron obtener los equipos')
+      return (data as Array<TeamRow & { member_count: Array<{ count: number }> }>).map((row) => ({
+        id: row.id,
+        name: row.name,
+        ownerId: row.owner_id,
+        createdAt: row.created_at,
+        memberCount: row.member_count?.[0]?.count ?? 0,
+      }))
+    },
+
+    async createTeam(input: CreateTeamInput) {
+      const user = await requireUser()
+      const supabase = getSupabase()
+
+      const { data: teamData, error: teamErr } = await supabase
+        .from('teams')
+        .insert({ name: input.name.trim(), owner_id: user.id })
+        .select('id, name, owner_id, created_at')
+        .single()
+      if (teamErr || !teamData) throw toError(teamErr, 'No se pudo crear el equipo')
+
+      // Insert owner as member
+      const memberRows: { team_id: string; user_id: string; role: string }[] = [
+        { team_id: teamData.id, user_id: user.id, role: 'owner' },
+        ...(input.memberIds ?? []).map((uid) => ({ team_id: teamData.id, user_id: uid, role: 'member' })),
+      ]
+      await supabase.from('team_members').insert(memberRows)
+
+      return mapTeam(teamData as TeamRow)
+    },
+
+    async updateTeam(id: string, input: UpdateTeamInput) {
+      const updateData: Record<string, unknown> = {}
+      if (input.name !== undefined) updateData.name = input.name.trim()
+      const { data, error } = await getSupabase()
+        .from('teams')
+        .update(updateData)
+        .eq('id', id)
+        .select('id, name, owner_id, created_at')
+        .single()
+      if (error || !data) throw toError(error, 'No se pudo actualizar el equipo')
+      return mapTeam(data as TeamRow)
+    },
+
+    async deleteTeam(id: string) {
+      const { error } = await getSupabase().from('teams').delete().eq('id', id)
+      if (error) throw toError(error, 'No se pudo eliminar el equipo')
+    },
+
+    async listTeamMembers(teamId: string) {
+      const { data, error } = await getSupabase()
+        .from('team_members')
+        .select('team_id, user_id, role, joined_at, user:profiles(id, email, full_name)')
+        .eq('team_id', teamId)
+        .order('joined_at', { ascending: true })
+      if (error) throw toError(error, 'No se pudieron obtener los miembros')
+      return (data as TeamMemberRow[]).map(mapTeamMember)
+    },
+
+    async addTeamMember(teamId: string, userId: string) {
+      const { data, error } = await getSupabase()
+        .from('team_members')
+        .insert({ team_id: teamId, user_id: userId, role: 'member' })
+        .select('team_id, user_id, role, joined_at, user:profiles(id, email, full_name)')
+        .single()
+      if (error || !data) throw toError(error, 'No se pudo agregar el miembro')
+      return mapTeamMember(data as TeamMemberRow)
+    },
+
+    async removeTeamMember(teamId: string, userId: string) {
+      const { error } = await getSupabase()
+        .from('team_members')
+        .delete()
+        .eq('team_id', teamId)
+        .eq('user_id', userId)
+      if (error) throw toError(error, 'No se pudo remover el miembro')
     },
   }
 }

@@ -22,6 +22,7 @@ export interface User {
   email: string
   fullName: string
   avatarUrl?: string
+  isAdmin?: boolean
 }
 
 export interface Project {
@@ -31,6 +32,38 @@ export interface Project {
   color: string
   createdAt: string
 }
+
+// ── Teams ──────────────────────────────────────────────────────────────────────
+
+export interface Team {
+  id: string
+  name: string
+  ownerId: string
+  createdAt: string
+  memberCount?: number
+}
+
+export type TeamMemberRole = 'owner' | 'member'
+
+export interface TeamMember {
+  teamId: string
+  userId: string
+  role: TeamMemberRole
+  joinedAt: string
+  user?: Pick<User, 'id' | 'email' | 'fullName' | 'avatarUrl'>
+}
+
+export interface CreateTeamInput {
+  name: string
+  /** User IDs to add as members (in addition to the owner) */
+  memberIds?: string[]
+}
+
+export interface UpdateTeamInput {
+  name?: string
+}
+
+// ── Subtasks ───────────────────────────────────────────────────────────────────
 
 export interface Subtask {
   id: string
@@ -54,11 +87,15 @@ export interface UpdateSubtaskInput {
   position?: number
 }
 
+// ── Tasks ──────────────────────────────────────────────────────────────────────
+
 export interface Task {
   id: string
   projectId: string
   userId: string
   assigneeId?: string | null
+  /** Optional team the task is shared with. All team members can see it. */
+  teamId?: string | null
   title: string
   description: string
   status: TaskStatus
@@ -72,6 +109,7 @@ export interface Task {
   updatedAt: string
   project?: Pick<Project, 'id' | 'name' | 'color'>
   assignee?: Pick<User, 'id' | 'email' | 'fullName' | 'avatarUrl'>
+  team?: Pick<Team, 'id' | 'name'>
   subtaskCount?: number
   completedSubtaskCount?: number
   subtasks?: Subtask[]
@@ -114,6 +152,7 @@ export interface TaskFilters {
   priority?: TaskPriority | 'all'
   projectId?: string | 'all'
   assigneeId?: string | 'all' | 'unassigned'
+  teamId?: string | 'all'
 }
 
 export interface CreateTaskInput {
@@ -127,6 +166,7 @@ export interface CreateTaskInput {
   dueDate?: string | null
   projectId: string
   assigneeId?: string | null
+  teamId?: string | null
 }
 
 export interface UpdateTaskInput {
@@ -141,6 +181,7 @@ export interface UpdateTaskInput {
   projectId?: string
   position?: number
   assigneeId?: string | null
+  teamId?: string | null
 }
 
 export interface CreateProjectInput {

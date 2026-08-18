@@ -27,6 +27,7 @@ const router = createRouter({
         { path: 'matriz', name: 'matrix', component: () => import('@/views/EisenhowerView.vue'), meta: { titleKey: 'nav.matrix' } },
         { path: 'calendario', name: 'calendar', component: () => import('@/views/CalendarView.vue'), meta: { titleKey: 'nav.calendar' } },
         { path: 'perfil', name: 'profile', component: () => import('@/views/ProfileView.vue'), meta: { titleKey: 'nav.profile' } },
+        { path: 'equipos', name: 'teams', component: () => import('@/views/TeamsView.vue'), meta: { titleKey: 'nav.teams' } },
       ],
     },
   ],

@@ -32,6 +32,7 @@ export default {
   'nav.matrix': 'Eisenhower Matrix',
   'nav.calendar': 'Calendar',
   'nav.profile': 'My Profile',
+  'nav.teams': 'Teams',
 
   // ── Statuses ──
   'status.todo': 'To do',
@@ -369,5 +370,32 @@ export default {
   'editor.redo': 'Redo (Ctrl+Y)',
   'editor.defaultColor': 'Default color',
   'editor.noHighlight': 'No highlight',
+
+  // ── Teams ──
+  'teams.title': 'Teams',
+  'teams.subtitle': 'Create and manage teams to collaborate on shared tasks.',
+  'teams.new': 'New team',
+  'teams.empty': "You don't have any teams yet.",
+  'teams.emptyHint': 'Create a team to collaborate with other users on shared tasks.',
+  'teams.members': 'member | members',
+  'teams.membersCount': '{n} member | {n} members',
+  'teams.createTitle': 'Create team',
+  'teams.editTitle': 'Edit team',
+  'teams.name': 'Team name',
+  'teams.namePlaceholder': 'E.g. Design Team',
+  'teams.addMembers': 'Add members',
+  'teams.membersLabel': 'Members',
+  'teams.noMembers': 'No members yet',
+  'teams.removeMember': 'Remove member',
+  'teams.deleteConfirm': 'Delete team "{name}"? This action is irreversible.',
+  'teams.deleteTeam': 'Delete team',
+  'teams.owner': 'Owner',
+  'teams.member': 'Member',
+  'teams.noTeam': 'No team',
+  'teams.team': 'Team',
+  'teams.filterAll': 'All teams',
+  'teams.adminOnly': 'Only administrators can create teams.',
+  'teams.taskTeam': 'Task team',
+  'teams.sharedWith': 'Shared with',
 } as const
 

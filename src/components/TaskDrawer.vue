@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Download, FileText, Grid2x2, Paperclip, Plus, Trash2, Upload, X } from '@lucide/vue'
+import { Download, FileText, Grid2x2, Paperclip, Plus, Trash2, Upload, Users, X } from '@lucide/vue'
 import CustomDatePicker from '@/components/CustomDatePicker.vue'
 import CustomSelect from '@/components/CustomSelect.vue'
 import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
 import { useI18n } from '@/i18n'
 import { formatDateTime } from '@/lib/dates'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useTeamsStore } from '@/stores/teams'
 import type { Subtask, TaskPriority } from '@/types'
 import ActivityItem from '@/components/ActivityItem.vue'
 import RichTextEditor from '@/components/RichTextEditor.vue'
@@ -14,6 +15,7 @@ import RichTextViewer from '@/components/RichTextViewer.vue'
 
 const { t } = useI18n()
 const workspace = useWorkspaceStore()
+const teamsStore = useTeamsStore()
 const tab = ref<'comments' | 'attachments' | 'activity'>('comments')
 const draft = ref('')
 const saving = ref(false)
@@ -39,6 +41,11 @@ const projectOptions = computed(() =>
 const assigneeOptions = computed(() => [
   { label: t('common.unassigned'), value: '' },
   ...workspace.users.map((u) => ({ label: u.fullName, value: u.id })),
+])
+
+const teamOptions = computed(() => [
+  { label: t('teams.noTeam'), value: '' },
+  ...teamsStore.teams.map((tm) => ({ label: tm.name, value: tm.id })),
 ])
 
 async function onAddSubtask() {
@@ -296,6 +303,17 @@ function close() {
               :modelValue="task.assigneeId ?? ''"
               :options="assigneeOptions"
               @update:modelValue="persist({ assigneeId: $event || null })"
+            />
+          </label>
+          <label class="field-label col-span-2">
+            <span class="flex items-center gap-1">
+              <Users class="size-3 text-muted" />
+              {{ t('teams.team') }}
+            </span>
+            <CustomSelect
+              :modelValue="task.teamId ?? ''"
+              :options="teamOptions"
+              @update:modelValue="persist({ teamId: $event || null })"
             />
           </label>
         </div>

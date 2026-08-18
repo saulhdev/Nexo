@@ -4,14 +4,18 @@ import type {
   CreateProjectInput,
   CreateSubtaskInput,
   CreateTaskInput,
+  CreateTeamInput,
   Project,
   Subtask,
   Task,
   TaskAttachment,
   TaskFilters,
+  Team,
+  TeamMember,
   UpdateProjectInput,
   UpdateSubtaskInput,
   UpdateTaskInput,
+  UpdateTeamInput,
   User,
 } from '@/types'
 
@@ -50,4 +54,13 @@ export interface Backend {
 
   listActivities(taskId: string): Promise<Activity[]>
   listRecentActivities(limit?: number): Promise<Activity[]>
+
+  // ── Teams ────────────────────────────────────────────────────────────────────
+  listTeams(): Promise<Team[]>
+  createTeam(input: CreateTeamInput): Promise<Team>
+  updateTeam(id: string, input: UpdateTeamInput): Promise<Team>
+  deleteTeam(id: string): Promise<void>
+  listTeamMembers(teamId: string): Promise<TeamMember[]>
+  addTeamMember(teamId: string, userId: string): Promise<TeamMember>
+  removeTeamMember(teamId: string, userId: string): Promise<void>
 }

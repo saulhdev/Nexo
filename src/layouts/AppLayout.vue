@@ -1,24 +1,29 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import { CalendarDays, ChevronDown, Columns3, Globe, Grid2x2, LayoutDashboard, ListChecks, LogOut, Pencil, Plus, User } from '@lucide/vue'
+import { CalendarDays, ChevronDown, Columns3, Globe, Grid2x2, LayoutDashboard, ListChecks, LogOut, Pencil, Plus, User, Users } from '@lucide/vue'
 import { APP_NAME } from '@/constants'
 import { useI18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { useTeamsStore } from '@/stores/teams'
 import ProjectModal from '@/components/ProjectModal.vue'
+import TeamModal from '@/components/TeamModal.vue'
 import TaskDrawer from '@/components/TaskDrawer.vue'
 import NotificationPopover from '@/components/NotificationPopover.vue'
-import type { Project } from '@/types'
+import type { Project, Team } from '@/types'
 
 const { t, locale, setLocale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const workspace = useWorkspaceStore()
+const teamsStore = useTeamsStore()
 
 const projectOpen = ref(false)
 const projectToEdit = ref<Project | null>(null)
+const teamModalOpen = ref(false)
+const teamToEdit = ref<Team | null>(null)
 const userMenuOpen = ref(false)
 const userMenuRef = ref<HTMLElement | null>(null)
 const currentYear = new Date().getFullYear()
@@ -31,6 +36,16 @@ function openNewProject() {
 function openEditProject(project: Project) {
   projectToEdit.value = project
   projectOpen.value = true
+}
+
+function openNewTeam() {
+  teamToEdit.value = null
+  teamModalOpen.value = true
+}
+
+function openEditTeam(team: Team) {
+  teamToEdit.value = team
+  teamModalOpen.value = true
 }
 
 function toggleUserMenu() {
@@ -54,6 +69,7 @@ const nav = computed(() => [
   { name: 'board', label: t('nav.board'), icon: Columns3 },
   { name: 'matrix', label: t('nav.matrix'), icon: Grid2x2 },
   { name: 'calendar', label: t('nav.calendar'), icon: CalendarDays },
+  { name: 'teams', label: t('nav.teams'), icon: Users },
   { name: 'profile', label: t('nav.profile'), icon: User },
 ])
 
@@ -73,6 +89,7 @@ function toggleLocale() {
 
 onMounted(() => {
   void workspace.bootstrap()
+  void teamsStore.bootstrap()
   document.addEventListener('click', handleUserMenuClickOutside)
 })
 
@@ -107,6 +124,11 @@ async function logout() {
 
 function filterProject(id: string) {
   workspace.setFilter('projectId', id)
+  if (route.name === 'dashboard') void router.push({ name: 'list' })
+}
+
+function filterTeam(id: string) {
+  workspace.setFilter('teamId', id)
   if (route.name === 'dashboard') void router.push({ name: 'list' })
 }
 </script>
@@ -169,6 +191,53 @@ function filterProject(id: string) {
               class="p-0.5 text-white/40 opacity-0 transition group-hover:opacity-100 hover:text-white"
               :title="t('common.editProject')"
               @click.stop="openEditProject(project)"
+            >
+              <Pencil class="size-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Teams sidebar section -->
+      <div class="mt-4 px-5">
+        <div class="flex items-center justify-between">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">{{ t('teams.title') }}</p>
+          <button
+            v-if="auth.user?.isAdmin"
+            class="text-white/50 hover:text-white"
+            :title="t('teams.new')"
+            @click="openNewTeam"
+          >
+            <Plus class="size-4" />
+          </button>
+        </div>
+        <div class="mt-2 space-y-0.5">
+          <button
+            class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-white/70 hover:bg-white/5"
+            :class="workspace.filters.teamId === 'all' && 'bg-white/8 text-white'"
+            @click="filterTeam('all')"
+          >
+            <span class="size-2 rounded-full bg-white/30" />
+            {{ t('common.all') }}
+          </button>
+          <div
+            v-for="team in teamsStore.teams"
+            :key="team.id"
+            class="group flex items-center justify-between rounded-lg px-2 py-1.5 text-sm text-white/70 transition hover:bg-white/5"
+            :class="workspace.filters.teamId === team.id && 'bg-white/8 text-white'"
+          >
+            <button
+              class="flex min-w-0 flex-1 items-center gap-2 text-left"
+              @click="filterTeam(team.id)"
+            >
+              <Users class="size-3 shrink-0 text-white/50" />
+              <span class="truncate">{{ team.name }}</span>
+            </button>
+            <button
+              v-if="team.ownerId === auth.user?.id || auth.user?.isAdmin"
+              class="p-0.5 text-white/40 opacity-0 transition group-hover:opacity-100 hover:text-white"
+              :title="t('teams.editTitle')"
+              @click.stop="openEditTeam(team)"
             >
               <Pencil class="size-3.5" />
             </button>
@@ -277,5 +346,6 @@ function filterProject(id: string) {
 
     <TaskDrawer />
     <ProjectModal v-model:open="projectOpen" :project="projectToEdit" @created="filterProject" />
+    <TeamModal v-model:open="teamModalOpen" :team="teamToEdit" />
   </div>
 </template>

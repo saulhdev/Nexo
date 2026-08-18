@@ -32,6 +32,7 @@ export default {
   'nav.matrix': 'Matriz de Eisenhower',
   'nav.calendar': 'Calendario',
   'nav.profile': 'Mi Perfil',
+  'nav.teams': 'Equipos',
 
   // ── Statuses ──
   'status.todo': 'Por hacer',
@@ -369,5 +370,32 @@ export default {
   'editor.redo': 'Rehacer (Ctrl+Y)',
   'editor.defaultColor': 'Color por defecto',
   'editor.noHighlight': 'Sin resaltado',
+
+  // ── Teams ──
+  'teams.title': 'Equipos',
+  'teams.subtitle': 'Crea y gestiona equipos para colaborar en tareas compartidas.',
+  'teams.new': 'Nuevo equipo',
+  'teams.empty': 'No tienes equipos aún.',
+  'teams.emptyHint': 'Crea un equipo para colaborar con otros usuarios en tareas compartidas.',
+  'teams.members': 'miembro | miembros',
+  'teams.membersCount': '{n} miembro | {n} miembros',
+  'teams.createTitle': 'Crear equipo',
+  'teams.editTitle': 'Editar equipo',
+  'teams.name': 'Nombre del equipo',
+  'teams.namePlaceholder': 'Ej. Equipo de Diseño',
+  'teams.addMembers': 'Agregar miembros',
+  'teams.membersLabel': 'Miembros',
+  'teams.noMembers': 'Sin miembros aún',
+  'teams.removeMember': 'Quitar miembro',
+  'teams.deleteConfirm': '¿Eliminar el equipo "{name}"? Esta acción es irreversible.',
+  'teams.deleteTeam': 'Eliminar equipo',
+  'teams.owner': 'Propietario',
+  'teams.member': 'Miembro',
+  'teams.noTeam': 'Sin equipo',
+  'teams.team': 'Equipo',
+  'teams.filterAll': 'Todos los equipos',
+  'teams.adminOnly': 'Solo los administradores pueden crear equipos.',
+  'teams.taskTeam': 'Equipo de la tarea',
+  'teams.sharedWith': 'Compartida con',
 } as const
 

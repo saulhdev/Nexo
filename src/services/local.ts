@@ -8,14 +8,18 @@ import type {
   CreateProjectInput,
   CreateSubtaskInput,
   CreateTaskInput,
+  CreateTeamInput,
   Project,
   Subtask,
   Task,
   TaskAttachment,
   TaskFilters,
+  Team,
+  TeamMember,
   UpdateProjectInput,
   UpdateSubtaskInput,
   UpdateTaskInput,
+  UpdateTeamInput,
   User,
 } from '@/types'
 import type { Backend } from '@/services/backend'
@@ -32,6 +36,8 @@ interface Db {
   comments: Comment[]
   attachments: TaskAttachment[]
   activities: Activity[]
+  teams: Team[]
+  teamMembers: TeamMember[]
 }
 
 function nowISO() {
@@ -104,7 +110,7 @@ function seed(): Db {
     st('st9', 't5', 'Añadir sección de Subtareas', false, 2),
   ]
 
-  return { user, users, projects, tasks, subtasks, comments, attachments, activities }
+  return { user, users, projects, tasks, subtasks, comments, attachments, activities, teams: [], teamMembers: [] }
 
   function st(id: string, taskId: string, title: string, completed: boolean, position: number): Subtask {
     return {
@@ -191,6 +197,8 @@ function load(): Db {
       const parsed = JSON.parse(raw) as Db
       if (!parsed.attachments) parsed.attachments = []
       if (!parsed.subtasks) parsed.subtasks = []
+      if (!parsed.teams) parsed.teams = []
+      if (!parsed.teamMembers) parsed.teamMembers = []
       if (!parsed.users || !parsed.users.length) {
         parsed.users = [
           parsed.user,
@@ -216,6 +224,7 @@ function save(db: Db) {
 function withProject(db: Db, task: Task): Task {
   const project = db.projects.find((p) => p.id === task.projectId)
   const assignee = task.assigneeId ? (db.users || []).find((u) => u.id === task.assigneeId) : undefined
+  const team = task.teamId ? db.teams.find((t) => t.id === task.teamId) : undefined
   const defaultUi = getUrgencyImportanceFromPriority(task.priority)
   const taskSubtasks = (db.subtasks || []).filter((st) => st.taskId === task.id)
   return {
@@ -224,6 +233,7 @@ function withProject(db: Db, task: Task): Task {
     isImportant: task.isImportant ?? defaultUi.isImportant,
     project: project ? { id: project.id, name: project.name, color: project.color } : task.project,
     assignee: assignee ? { id: assignee.id, email: assignee.email, fullName: assignee.fullName, avatarUrl: assignee.avatarUrl } : undefined,
+    team: team ? { id: team.id, name: team.name } : undefined,
     subtaskCount: taskSubtasks.length,
     completedSubtaskCount: taskSubtasks.filter((st) => st.completed).length,
   }
@@ -366,6 +376,7 @@ export function createLocalBackend(): Backend {
         projectId: input.projectId,
         userId: db.user.id,
         assigneeId: input.assigneeId ?? null,
+        teamId: input.teamId ?? null,
         title: input.title.trim(),
         description: input.description?.trim() ?? '',
         status: input.status ?? 'todo',
@@ -437,6 +448,7 @@ export function createLocalBackend(): Backend {
       }
       if (input.projectId !== undefined) task.projectId = input.projectId
       if (input.position !== undefined) task.position = input.position
+      if (input.teamId !== undefined) task.teamId = input.teamId
       task.updatedAt = nowISO()
       save(db)
       return withProject(db, task)
@@ -617,6 +629,83 @@ export function createLocalBackend(): Backend {
         .activities.slice()
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
         .slice(0, limit)
+    },
+
+    // ── Teams (local stubs) ────────────────────────────────────────────────
+
+    async listTeams() {
+      const db = load()
+      const myId = db.user.id
+      return db.teams.filter((t) =>
+        t.ownerId === myId || db.teamMembers.some((m) => m.teamId === t.id && m.userId === myId),
+      )
+    },
+
+    async createTeam(input: CreateTeamInput) {
+      const db = load()
+      const now = nowISO()
+      const team: Team = {
+        id: crypto.randomUUID(),
+        name: input.name.trim(),
+        ownerId: db.user.id,
+        createdAt: now,
+        memberCount: 1 + (input.memberIds?.length ?? 0),
+      }
+      db.teams.push(team)
+      db.teamMembers.push({ teamId: team.id, userId: db.user.id, role: 'owner', joinedAt: now })
+      for (const uid of input.memberIds ?? []) {
+        db.teamMembers.push({ teamId: team.id, userId: uid, role: 'member', joinedAt: now })
+      }
+      save(db)
+      return team
+    },
+
+    async updateTeam(id: string, input: UpdateTeamInput) {
+      const db = load()
+      const team = db.teams.find((t) => t.id === id)
+      if (!team) throw new Error('Equipo no encontrado')
+      if (input.name !== undefined) team.name = input.name.trim()
+      save(db)
+      return team
+    },
+
+    async deleteTeam(id: string) {
+      const db = load()
+      db.teams = db.teams.filter((t) => t.id !== id)
+      db.teamMembers = db.teamMembers.filter((m) => m.teamId !== id)
+      db.tasks = db.tasks.map((t) => (t.teamId === id ? { ...t, teamId: null } : t))
+      save(db)
+    },
+
+    async listTeamMembers(teamId: string) {
+      const db = load()
+      return db.teamMembers
+        .filter((m) => m.teamId === teamId)
+        .map((m) => ({
+          ...m,
+          user: (db.users || []).find((u) => u.id === m.userId),
+        }))
+    },
+
+    async addTeamMember(teamId: string, userId: string) {
+      const db = load()
+      const existing = db.teamMembers.find((m) => m.teamId === teamId && m.userId === userId)
+      if (existing) return existing
+      const member: TeamMember = { teamId, userId, role: 'member', joinedAt: nowISO() }
+      db.teamMembers.push(member)
+      const team = db.teams.find((t) => t.id === teamId)
+      if (team) team.memberCount = (team.memberCount ?? 0) + 1
+      save(db)
+      const user = (db.users || []).find((u) => u.id === userId)
+      return { ...member, user }
+    },
+
+    async removeTeamMember(teamId: string, userId: string) {
+      const db = load()
+      db.teamMembers = db.teamMembers.filter((m) => !(m.teamId === teamId && m.userId === userId))
+      const team = db.teams.find((t) => t.id === teamId)
+      if (team && (team.memberCount ?? 0) > 0) team.memberCount = (team.memberCount ?? 1) - 1
+      save(db)
     },
   }
 }
