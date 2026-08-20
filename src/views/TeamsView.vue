@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Users, Plus, UserPlus, ChevronRight, Crown, UserCheck, Layers } from '@lucide/vue'
+import { Users, Plus, ChevronRight, Crown, UserCheck, Layers } from '@lucide/vue'
 import { useI18n } from '@/i18n'
 import { useTeamsStore } from '@/stores/teams'
 import { useWorkspaceStore } from '@/stores/workspace'

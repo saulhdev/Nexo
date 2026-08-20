@@ -50,7 +50,7 @@ const notifications = computed(() => {
     list.push({
       id: `act-${act.id}`,
       title: task ? task.title : 'Actividad reciente',
-      subtitle: act.action,
+      subtitle: act.authorName ? `${act.authorName} (${act.type})` : act.type,
       type: 'activity',
       timestamp: act.createdAt,
       taskId: act.taskId,

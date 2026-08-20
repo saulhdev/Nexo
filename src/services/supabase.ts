@@ -892,7 +892,7 @@ export function createSupabaseBackend(): Backend {
         .eq('team_id', teamId)
         .order('joined_at', { ascending: true })
       if (error) throw toError(error, 'No se pudieron obtener los miembros')
-      return (data as TeamMemberRow[]).map(mapTeamMember)
+      return (data as unknown as TeamMemberRow[]).map(mapTeamMember)
     },
 
     async addTeamMember(teamId: string, userId: string) {
@@ -902,7 +902,7 @@ export function createSupabaseBackend(): Backend {
         .select('team_id, user_id, role, joined_at, user:profiles(id, email, full_name)')
         .single()
       if (error || !data) throw toError(error, 'No se pudo agregar el miembro')
-      return mapTeamMember(data as TeamMemberRow)
+      return mapTeamMember(data as unknown as TeamMemberRow)
     },
 
     async removeTeamMember(teamId: string, userId: string) {
