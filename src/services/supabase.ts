@@ -74,6 +74,7 @@ interface TaskRow {
   position: number
   created_at: string
   updated_at: string
+  completed_at?: string | null
   project?: { id: string; name: string; color: string } | null
   assignee?: { id: string; email: string; full_name: string | null } | null
   team?: { id: string; name: string } | null
@@ -186,6 +187,7 @@ function mapTask(row: TaskRow & { subtasks?: Array<{ id: string; completed: bool
     position: row.position,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    completedAt: row.completed_at || (row.status === 'done' ? row.updated_at : null),
     project: row.project ?? undefined,
     assignee: row.assignee
       ? {
@@ -531,6 +533,7 @@ export function createSupabaseBackend(): Backend {
       const defaultUi = getUrgencyImportanceFromPriority(priority)
       const isUrgent = input.isUrgent ?? defaultUi.isUrgent
       const isImportant = input.isImportant ?? defaultUi.isImportant
+      const now = new Date().toISOString()
 
       const { data: last } = await getSupabase()
         .from('tasks')
@@ -556,6 +559,7 @@ export function createSupabaseBackend(): Backend {
           start_date: input.startDate ?? null,
           due_date: input.dueDate ?? null,
           position: (last?.position ?? -1) + 1,
+          completed_at: status === 'done' ? (input.completedAt ?? now) : null,
         })
         .select('*, project:projects(id, name, color), assignee:profiles!assignee_id(id, email, full_name), team:teams(id, name)')
         .single()
@@ -570,10 +574,21 @@ export function createSupabaseBackend(): Backend {
 
     async updateTask(id: string, input: UpdateTaskInput) {
       const current = await this.getTask(id)
-      const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+      const now = new Date().toISOString()
+      const patch: Record<string, unknown> = { updated_at: now }
       if (input.title !== undefined) patch.title = input.title.trim()
       if (input.description !== undefined) patch.description = input.description
-      if (input.status !== undefined) patch.status = input.status
+      if (input.status !== undefined) {
+        patch.status = input.status
+        if (input.status === 'done') {
+          patch.completed_at = input.completedAt ?? now
+        } else {
+          patch.completed_at = null
+        }
+      }
+      if (input.completedAt !== undefined) {
+        patch.completed_at = input.completedAt
+      }
       if (input.priority !== undefined) patch.priority = input.priority
       if (input.isUrgent !== undefined) patch.is_urgent = input.isUrgent
       if (input.isImportant !== undefined) patch.is_important = input.isImportant
@@ -629,10 +644,21 @@ export function createSupabaseBackend(): Backend {
 
     async reorderColumn(status, orderedIds) {
       const supabase = getSupabase()
+      const now = new Date().toISOString()
       await Promise.all(
-        orderedIds.map((id, index) =>
-          supabase.from('tasks').update({ status, position: index, updated_at: new Date().toISOString() }).eq('id', id),
-        ),
+        orderedIds.map((id, index) => {
+          const updatePayload: Record<string, unknown> = {
+            status,
+            position: index,
+            updated_at: now,
+          }
+          if (status === 'done') {
+            updatePayload.completed_at = now
+          } else {
+            updatePayload.completed_at = null
+          }
+          return supabase.from('tasks').update(updatePayload).eq('id', id)
+        }),
       )
     },
 

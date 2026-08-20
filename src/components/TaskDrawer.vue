@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Download, FileText, Grid2x2, Paperclip, Plus, Trash2, Upload, Users, X } from '@lucide/vue'
+import { Archive, ArchiveRestore, Download, FileText, Grid2x2, Paperclip, Plus, Trash2, Upload, Users, X } from '@lucide/vue'
 import CustomDatePicker from '@/components/CustomDatePicker.vue'
 import CustomSelect from '@/components/CustomSelect.vue'
 import { getPriorityFromUrgencyImportance, getQuadrantFromTask, getUrgencyImportanceFromPriority, PRIORITIES, STATUSES } from '@/constants'
 import { useI18n } from '@/i18n'
 import { formatDateTime } from '@/lib/dates'
-import { useWorkspaceStore } from '@/stores/workspace'
+import { isTaskArchived, useWorkspaceStore } from '@/stores/workspace'
 import { useTeamsStore } from '@/stores/teams'
 import type { Subtask, TaskPriority } from '@/types'
 import ActivityItem from '@/components/ActivityItem.vue'
@@ -27,6 +27,13 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const task = computed(() => workspace.activeTask)
 const taskQuadrant = computed(() => (task.value ? getQuadrantFromTask(task.value) : null))
+const isArchived = computed(() => (task.value ? isTaskArchived(task.value, workspace.autoArchiveDays) : false))
+
+async function handleUnarchive() {
+  if (!task.value) return
+  if (!confirm(t('archived.unarchiveConfirm'))) return
+  await workspace.unarchiveTask(task.value.id)
+}
 
 const subtasks = computed(() => workspace.subtasks)
 const completedSubtasksCount = computed(() => subtasks.value.filter((st) => st.completed).length)
@@ -195,6 +202,27 @@ function close() {
             </button>
           </div>
         </header>
+
+        <!-- BANNER DE TAREA ARCHIVADA -->
+        <div v-if="isArchived" class="border-b border-amber-500/30 bg-amber-500/10 px-5 py-3 text-xs text-amber-800">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <Archive class="size-4 shrink-0 text-amber-700" />
+              <div>
+                <span class="font-bold">{{ t('archived.readOnlyBadge') }}</span>
+                <p class="text-[11px] text-amber-700/90">{{ t('archived.readOnlyNotice') }}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-accent/90 shrink-0"
+              @click="handleUnarchive"
+            >
+              <ArchiveRestore class="size-3.5" />
+              <span>{{ t('archived.unarchive') }}</span>
+            </button>
+          </div>
+        </div>
 
         <!-- SECCIÓN MATRIZ DE EISENHOWER EN DRAWER -->
         <div v-if="taskQuadrant" class="border-b border-line bg-canvas/40 px-5 py-3">

@@ -31,6 +31,7 @@ export default {
   'nav.board': 'Kanban Board',
   'nav.matrix': 'Eisenhower Matrix',
   'nav.calendar': 'Calendar',
+  'nav.archived': 'Archived Tasks',
   'nav.profile': 'My Profile',
   'nav.teams': 'Teams',
 
@@ -397,5 +398,40 @@ export default {
   'teams.adminOnly': 'Only administrators can create teams.',
   'teams.taskTeam': 'Task team',
   'teams.sharedWith': 'Shared with',
+
+  // ── Archived Tasks ──
+  'archived.title': 'Archived Tasks',
+  'archived.subtitle': 'Browse completed tasks that have been automatically archived. Read-only view.',
+  'archived.policyInfo': 'Auto-archiving at {days} days after completion',
+  'archived.changePreference': 'Configure days',
+  'archived.searchPlaceholder': 'Search in archived tasks…',
+  'archived.allProjects': 'All projects',
+  'archived.allAssignees': 'All assignees',
+  'archived.taskCount': 'archived task | archived tasks',
+  'archived.thTask': 'Task',
+  'archived.thProject': 'Project',
+  'archived.thAssignee': 'Assignee',
+  'archived.thPriority': 'Priority',
+  'archived.thCompletedAt': 'Completed on',
+  'archived.thAge': 'Time archived',
+  'archived.thActions': 'Actions',
+  'archived.unarchive': 'Unarchive',
+  'archived.unarchiveConfirm': 'Do you want to unarchive this task? It will be marked as "In progress" and returned to your active views.',
+  'archived.unarchiveSuccess': 'Task unarchived successfully and marked as "In progress".',
+  'archived.readOnlyBadge': 'Archived (Read-only)',
+  'archived.readOnlyNotice': 'This task is archived. It is in read-only mode. To edit it, unarchive it.',
+  'archived.emptyTitle': 'No archived tasks',
+  'archived.emptyDesc': 'Tasks marked as "Done" more than {days} days ago will be archived here automatically.',
+  'archived.daysAgo': '{n} days ago',
+  'archived.today': 'Today',
+  'archived.yesterday': 'Yesterday',
+
+  // ── Profile Preferences ──
+  'profile.preferences': 'System Preferences',
+  'profile.autoArchiveTitle': 'Task Auto-Archiving',
+  'profile.autoArchiveDesc': 'Set the elapsed time after completing a task before moving it automatically to the historical archive to keep your active views clean (Dashboard, List, Board, Matrix and Calendar).',
+  'profile.autoArchiveDays': 'Days to auto-archive',
+  'profile.autoArchiveDaysUnit': '{days} days',
+  'profile.autoArchiveSaved': 'Auto-archive preference saved.',
 } as const
 

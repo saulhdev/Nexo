@@ -4,6 +4,7 @@ import { getBackend } from '@/services'
 import { isDueSoon, isOverdue, startOfWeekISO } from '@/lib/dates'
 import type {
   Activity,
+  AutoArchiveDays,
   Comment,
   CreateProjectInput,
   CreateTaskInput,
@@ -19,6 +20,32 @@ import type {
   User,
 } from '@/types'
 
+const AUTO_ARCHIVE_STORAGE_KEY = 'nexo:autoArchiveDays'
+
+export function isTaskArchived(task: Task, days: number): boolean {
+  if (task.status !== 'done') return false
+  const dateStr = task.completedAt || task.updatedAt || task.createdAt
+  if (!dateStr) return false
+  const completedTime = new Date(dateStr).getTime()
+  if (isNaN(completedTime)) return false
+  const diffMs = Date.now() - completedTime
+  const diffDays = diffMs / (1000 * 60 * 60 * 24)
+  return diffDays >= days
+}
+
+function getInitialAutoArchiveDays(): AutoArchiveDays {
+  try {
+    const raw = localStorage.getItem(AUTO_ARCHIVE_STORAGE_KEY)
+    if (raw) {
+      const parsed = Number(raw)
+      if ([15, 30, 45, 60].includes(parsed)) return parsed as AutoArchiveDays
+    }
+  } catch {
+    /* ignore storage errors */
+  }
+  return 30
+}
+
 export const useWorkspaceStore = defineStore('workspace', () => {
   const backend = getBackend()
   const users = ref<User[]>([])
@@ -33,6 +60,16 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   const loading = ref(false)
   const detailLoading = ref(false)
   const error = ref('')
+  const autoArchiveDays = ref<AutoArchiveDays>(getInitialAutoArchiveDays())
+
+  function setAutoArchiveDays(days: AutoArchiveDays) {
+    autoArchiveDays.value = days
+    try {
+      localStorage.setItem(AUTO_ARCHIVE_STORAGE_KEY, String(days))
+    } catch {
+      /* ignore */
+    }
+  }
 
   const filters = ref<Required<TaskFilters>>({
     search: '',
@@ -45,9 +82,22 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
   const activeTask = computed(() => tasks.value.find((task) => task.id === activeTaskId.value) ?? null)
 
+  const activeTasks = computed(() => tasks.value.filter((task) => !isTaskArchived(task, autoArchiveDays.value)))
+
+  const archivedTasks = computed(() =>
+    tasks.value
+      .filter((task) => isTaskArchived(task, autoArchiveDays.value))
+      .slice()
+      .sort((a, b) => {
+        const timeA = new Date(a.completedAt || a.updatedAt || a.createdAt).getTime() || 0
+        const timeB = new Date(b.completedAt || b.updatedAt || b.createdAt).getTime() || 0
+        return timeB - timeA
+      }),
+  )
+
   const filteredTasks = computed(() => {
     const q = filters.value.search.trim().toLowerCase()
-    return tasks.value.filter((task) => {
+    return activeTasks.value.filter((task) => {
       if (filters.value.status !== 'all' && task.status !== filters.value.status) return false
       if (filters.value.priority !== 'all' && task.priority !== filters.value.priority) return false
       if (filters.value.projectId !== 'all' && task.projectId !== filters.value.projectId) return false
@@ -73,7 +123,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     const weekStart = startOfWeekISO()
     const byPriority = { low: 0, medium: 0, high: 0, urgent: 0 }
     const result: DashboardStats = {
-      total: tasks.value.length,
+      total: activeTasks.value.length,
       todo: 0,
       inProgress: 0,
       inReview: 0,
@@ -83,13 +133,14 @@ export const useWorkspaceStore = defineStore('workspace', () => {
       doneThisWeek: 0,
       byPriority,
     }
-    for (const task of tasks.value) {
+    for (const task of activeTasks.value) {
       if (task.status === 'todo') result.todo += 1
       if (task.status === 'in_progress') result.inProgress += 1
       if (task.status === 'in_review') result.inReview += 1
       if (task.status === 'done') {
         result.done += 1
-        if (task.updatedAt.slice(0, 10) >= weekStart) result.doneThisWeek += 1
+        const completedDate = (task.completedAt || task.updatedAt).slice(0, 10)
+        if (completedDate >= weekStart) result.doneThisWeek += 1
       }
       byPriority[task.priority] += 1
       if (isOverdue(task.dueDate, task.status)) result.overdue += 1
@@ -99,7 +150,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   })
 
   const upcoming = computed(() =>
-    tasks.value
+    activeTasks.value
       .filter((task) => task.dueDate && task.status !== 'done')
       .slice()
       .sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? ''))
@@ -372,10 +423,16 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     filters.value[key] = value as never
   }
 
+  async function unarchiveTask(id: string) {
+    return await updateTask(id, { status: 'in_progress', completedAt: null })
+  }
+
   return {
     users,
     projects,
     tasks,
+    activeTasks,
+    archivedTasks,
     subtasks,
     comments,
     attachments,
@@ -386,6 +443,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     loading,
     detailLoading,
     error,
+    autoArchiveDays,
+    setAutoArchiveDays,
     filters,
     filteredTasks,
     stats,
@@ -396,6 +455,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     updateProject,
     createTask,
     updateTask,
+    unarchiveTask,
     deleteTask,
     moveInColumn,
     openTask,

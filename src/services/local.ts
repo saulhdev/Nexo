@@ -66,7 +66,7 @@ function seed(): Db {
   ]
 
   const tasks: Task[] = [
-    t('t1', 'proj-producto', 'Definir alcance del MVP', 'Lista de vistas, campos de tarea y flujo de comentarios.', 'done', 'high', addDaysISO(-5), addDaysISO(-2), 0, user.id),
+    t('t1', 'proj-producto', 'Definir alcance del MVP', 'Lista de vistas, campos de tarea y flujo de comentarios.', 'done', 'high', addDaysISO(-5), addDaysISO(-2), 0, user.id, addDaysISO(-2)),
     t('t2', 'proj-producto', 'Diseñar dashboard de estadísticas', 'Tarjetas de estado, vencidas y actividad reciente.', 'in_review', 'medium', addDaysISO(-2), addDaysISO(1), 0, 'user-carlos'),
     t('t3', 'proj-producto', 'Implementar vista de lista', 'Crear, filtrar y editar tareas desde una tabla.', 'in_progress', 'high', addDaysISO(-1), todayISO(), 0, 'user-ana'),
     t('t4', 'proj-producto', 'Tablero kanban con arrastre', 'Mover tarjetas entre columnas actualiza el estado.', 'in_progress', 'urgent', todayISO(), addDaysISO(2), 1, user.id),
@@ -76,8 +76,9 @@ function seed(): Db {
     t('t8', 'proj-ops', 'Preparar demo para el equipo', 'Datos de ejemplo y recorrido por las tres vistas.', 'todo', 'medium', addDaysISO(-4), addDaysISO(-1), 3, 'user-carlos'),
     t('t9', 'proj-personal', 'Actualizar portafolio', 'Añadir captura de Nexo cuando el MVP esté listo.', 'todo', 'low', addDaysISO(5), addDaysISO(12), 0, user.id),
     t('t10', 'proj-producto', 'Ajustar vacíos y estados de error', 'Lista vacía, sin resultados y fallos de red.', 'in_review', 'medium', addDaysISO(1), addDaysISO(4), 1, 'user-ana'),
-    t('t11', 'proj-personal', 'Leer notas de Monday y Asana', 'Tomar ideas de densidad y de la línea de tiempo.', 'done', 'low', addDaysISO(-10), addDaysISO(-6), 1, null),
-    t('t12', 'proj-ops', 'Documentar cómo levantar el proyecto', 'README con modo local y pasos de Supabase.', 'done', 'medium', addDaysISO(-7), addDaysISO(-3), 0, user.id),
+    t('t11', 'proj-personal', 'Leer notas de Monday y Asana', 'Tomar ideas de densidad y de la línea de tiempo.', 'done', 'low', addDaysISO(-45), addDaysISO(-40), 1, null, addDaysISO(-38)),
+    t('t12', 'proj-ops', 'Documentar cómo levantar el proyecto', 'README con modo local y pasos de Supabase.', 'done', 'medium', addDaysISO(-60), addDaysISO(-50), 0, user.id, addDaysISO(-48)),
+    t('t13', 'proj-producto', 'Estudio de arquitectura y dependencias', 'Análisis comparativo de Pinia y composables.', 'done', 'low', addDaysISO(-75), addDaysISO(-70), 0, 'user-carlos', addDaysISO(-70)),
   ]
 
   const comments: Comment[] = [
@@ -136,6 +137,7 @@ function seed(): Db {
     dueDate: string | null,
     position: number,
     assigneeId: string | null = null,
+    completedAt: string | null = null,
   ): Task {
     return {
       id,
@@ -151,6 +153,7 @@ function seed(): Db {
       position,
       createdAt,
       updatedAt: createdAt,
+      completedAt: completedAt || (status === 'done' ? createdAt : null),
     }
   }
 
@@ -368,9 +371,11 @@ export function createLocalBackend(): Backend {
 
     async createTask(input: CreateTaskInput) {
       const db = load()
-      const siblings = db.tasks.filter((item) => item.status === (input.status ?? 'todo'))
+      const status = input.status ?? 'todo'
+      const siblings = db.tasks.filter((item) => item.status === status)
       const priority = input.priority ?? 'medium'
       const defaultUi = getUrgencyImportanceFromPriority(priority)
+      const now = nowISO()
       const task: Task = {
         id: crypto.randomUUID(),
         projectId: input.projectId,
@@ -379,15 +384,16 @@ export function createLocalBackend(): Backend {
         teamId: input.teamId ?? null,
         title: input.title.trim(),
         description: input.description?.trim() ?? '',
-        status: input.status ?? 'todo',
+        status,
         priority,
         isUrgent: input.isUrgent ?? defaultUi.isUrgent,
         isImportant: input.isImportant ?? defaultUi.isImportant,
         startDate: input.startDate ?? null,
         dueDate: input.dueDate ?? null,
         position: siblings.length,
-        createdAt: nowISO(),
-        updatedAt: nowISO(),
+        createdAt: now,
+        updatedAt: now,
+        completedAt: status === 'done' ? (input.completedAt ?? now) : null,
       }
       db.tasks.push(task)
       pushActivity(db, task, 'task.created', { title: task.title })
@@ -403,6 +409,7 @@ export function createLocalBackend(): Backend {
       const db = load()
       const task = db.tasks.find((item) => item.id === id)
       if (!task) throw new Error('Tarea no encontrada')
+      const now = nowISO()
 
       if (input.title !== undefined && input.title !== task.title) {
         pushActivity(db, task, 'task.updated', { field: 'title', from: task.title, to: input.title })
@@ -415,6 +422,14 @@ export function createLocalBackend(): Backend {
       if (input.status !== undefined && input.status !== task.status) {
         pushActivity(db, task, 'status.changed', { from: task.status, to: input.status })
         task.status = input.status
+        if (input.status === 'done') {
+          task.completedAt = input.completedAt ?? now
+        } else {
+          task.completedAt = null
+        }
+      }
+      if (input.completedAt !== undefined) {
+        task.completedAt = input.completedAt
       }
       if (input.priority !== undefined && input.priority !== task.priority) {
         pushActivity(db, task, 'priority.changed', { from: task.priority, to: input.priority })
@@ -449,7 +464,7 @@ export function createLocalBackend(): Backend {
       if (input.projectId !== undefined) task.projectId = input.projectId
       if (input.position !== undefined) task.position = input.position
       if (input.teamId !== undefined) task.teamId = input.teamId
-      task.updatedAt = nowISO()
+      task.updatedAt = now
       save(db)
       return withProject(db, task)
     },
@@ -466,12 +481,17 @@ export function createLocalBackend(): Backend {
 
     async reorderColumn(status, orderedIds) {
       const db = load()
+      const now = nowISO()
       orderedIds.forEach((id, index) => {
         const task = db.tasks.find((item) => item.id === id)
         if (!task) return
+        if (task.status !== status) {
+          if (status === 'done') task.completedAt = now
+          else task.completedAt = null
+        }
         task.status = status
         task.position = index
-        task.updatedAt = nowISO()
+        task.updatedAt = now
       })
       save(db)
     },

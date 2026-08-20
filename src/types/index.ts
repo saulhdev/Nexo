@@ -89,6 +89,8 @@ export interface UpdateSubtaskInput {
 
 // ── Tasks ──────────────────────────────────────────────────────────────────────
 
+export type AutoArchiveDays = 15 | 30 | 45 | 60
+
 export interface Task {
   id: string
   projectId: string
@@ -107,6 +109,7 @@ export interface Task {
   position: number
   createdAt: string
   updatedAt: string
+  completedAt?: string | null
   project?: Pick<Project, 'id' | 'name' | 'color'>
   assignee?: Pick<User, 'id' | 'email' | 'fullName' | 'avatarUrl'>
   team?: Pick<Team, 'id' | 'name'>
@@ -167,6 +170,7 @@ export interface CreateTaskInput {
   projectId: string
   assigneeId?: string | null
   teamId?: string | null
+  completedAt?: string | null
 }
 
 export interface UpdateTaskInput {
@@ -182,6 +186,7 @@ export interface UpdateTaskInput {
   position?: number
   assigneeId?: string | null
   teamId?: string | null
+  completedAt?: string | null
 }
 
 export interface CreateProjectInput {

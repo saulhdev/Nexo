@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
-import { CalendarDays, ChevronDown, Columns3, Globe, Grid2x2, LayoutDashboard, ListChecks, LogOut, Pencil, Plus, User, Users } from '@lucide/vue'
+import { Archive, CalendarDays, ChevronDown, Columns3, Globe, Grid2x2, LayoutDashboard, ListChecks, LogOut, Pencil, Plus, User, Users } from '@lucide/vue'
 import { APP_NAME } from '@/constants'
 import { useI18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -69,6 +69,7 @@ const nav = computed(() => [
   { name: 'board', label: t('nav.board'), icon: Columns3 },
   { name: 'matrix', label: t('nav.matrix'), icon: Grid2x2 },
   { name: 'calendar', label: t('nav.calendar'), icon: CalendarDays },
+  { name: 'archived', label: t('nav.archived'), icon: Archive },
   { name: 'teams', label: t('nav.teams'), icon: Users },
   { name: 'profile', label: t('nav.profile'), icon: User },
 ])

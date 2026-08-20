@@ -31,6 +31,7 @@ export default {
   'nav.board': 'Tablero Kanban',
   'nav.matrix': 'Matriz de Eisenhower',
   'nav.calendar': 'Calendario',
+  'nav.archived': 'Tareas Archivadas',
   'nav.profile': 'Mi Perfil',
   'nav.teams': 'Equipos',
 
@@ -397,5 +398,40 @@ export default {
   'teams.adminOnly': 'Solo los administradores pueden crear equipos.',
   'teams.taskTeam': 'Equipo de la tarea',
   'teams.sharedWith': 'Compartida con',
+
+  // ── Archived Tasks ──
+  'archived.title': 'Tareas Archivadas',
+  'archived.subtitle': 'Consulta las tareas completadas que han sido archivadas automáticamente. Vista de solo lectura.',
+  'archived.policyInfo': 'Autoarchivado a los {days} días de completada',
+  'archived.changePreference': 'Configurar días',
+  'archived.searchPlaceholder': 'Buscar en tareas archivadas…',
+  'archived.allProjects': 'Todos los proyectos',
+  'archived.allAssignees': 'Todos los asignados',
+  'archived.taskCount': 'tarea archivada | tareas archivadas',
+  'archived.thTask': 'Tarea',
+  'archived.thProject': 'Proyecto',
+  'archived.thAssignee': 'Asignado',
+  'archived.thPriority': 'Prioridad',
+  'archived.thCompletedAt': 'Fecha de completado',
+  'archived.thAge': 'Tiempo archivada',
+  'archived.thActions': 'Acciones',
+  'archived.unarchive': 'Desarchivar',
+  'archived.unarchiveConfirm': '¿Deseas desarchivar esta tarea? Se marcará como "En progreso" y volverá a tus vistas activas.',
+  'archived.unarchiveSuccess': 'Tarea desarchivada con éxito y marcada como "En progreso".',
+  'archived.readOnlyBadge': 'Archivada (Solo lectura)',
+  'archived.readOnlyNotice': 'Esta tarea está archivada. Está en modo de solo lectura. Para editarla, desarchívala.',
+  'archived.emptyTitle': 'No hay tareas archivadas',
+  'archived.emptyDesc': 'Las tareas marcadas como "Hecho" hace más de {days} días se archivarán aquí automáticamente.',
+  'archived.daysAgo': 'Hace {n} días',
+  'archived.today': 'Hoy',
+  'archived.yesterday': 'Ayer',
+
+  // ── Profile Preferences ──
+  'profile.preferences': 'Preferencias del Sistema',
+  'profile.autoArchiveTitle': 'Autoarchivado de Tareas',
+  'profile.autoArchiveDesc': 'Define el tiempo que debe transcurrir tras completar una tarea para moverla automáticamente al archivo histórico y mantener limpias tus vistas activas (Dashboard, Lista, Tablero, Matriz y Calendario).',
+  'profile.autoArchiveDays': 'Días para autoarchivar',
+  'profile.autoArchiveDaysUnit': '{days} días',
+  'profile.autoArchiveSaved': 'Preferencia de autoarchivado guardada.',
 } as const
 

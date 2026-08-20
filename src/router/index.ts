@@ -26,6 +26,7 @@ const router = createRouter({
         { path: 'tablero', name: 'board', component: () => import('@/views/KanbanView.vue'), meta: { titleKey: 'nav.board' } },
         { path: 'matriz', name: 'matrix', component: () => import('@/views/EisenhowerView.vue'), meta: { titleKey: 'nav.matrix' } },
         { path: 'calendario', name: 'calendar', component: () => import('@/views/CalendarView.vue'), meta: { titleKey: 'nav.calendar' } },
+        { path: 'archivadas', name: 'archived', component: () => import('@/views/ArchivedTasksView.vue'), meta: { titleKey: 'nav.archived' } },
         { path: 'perfil', name: 'profile', component: () => import('@/views/ProfileView.vue'), meta: { titleKey: 'nav.profile' } },
         { path: 'equipos', name: 'teams', component: () => import('@/views/TeamsView.vue'), meta: { titleKey: 'nav.teams' } },
       ],
