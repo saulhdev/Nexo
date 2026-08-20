@@ -337,16 +337,29 @@ function closeAllPopovers() {
   showColorMenu.value = false
   showHighlightMenu.value = false
 }
+
+function focusEditor(event?: MouseEvent) {
+  if (!editor.value) return
+  if (event) {
+    const target = event.target as HTMLElement
+    if (target.closest('.editor-toolbar, .toolbar-dropdown, button, input, a')) {
+      return
+    }
+  }
+  if (!editor.value.isFocused) {
+    editor.value.commands.focus('end')
+  }
+}
 </script>
 
 <template>
   <div
-    class="rich-editor-wrapper rounded-xl border border-line bg-canvas transition-colors focus-within:border-accent/80 shadow-xs flex flex-col"
-    @click.self="editor?.chain().focus().run()"
+    class="rich-editor-wrapper rounded-xl border border-line bg-canvas transition-colors focus-within:border-accent/80 shadow-xs flex flex-col cursor-text"
+    @click="focusEditor"
   >
     <!-- MONDAY-STYLE FORMATTING TOOLBAR -->
     <div
-      class="editor-toolbar relative z-30 flex flex-wrap items-center gap-0.5 border-b border-line bg-surface/95 px-2 py-1.5 rounded-t-xl select-none backdrop-blur-xs text-ink"
+      class="editor-toolbar relative z-30 flex flex-wrap items-center gap-0.5 border-b border-line bg-surface/95 px-2 py-1.5 rounded-t-xl select-none backdrop-blur-xs text-ink cursor-default"
       @click.stop
     >
       <!-- HEADINGS SELECTOR -->
@@ -683,7 +696,8 @@ function closeAllPopovers() {
     <!-- LINK MODAL / POPOVER -->
     <div
       v-if="showLinkModal"
-      class="border-b border-line bg-surface px-3 py-2 flex items-center gap-2 text-xs"
+      class="border-b border-line bg-surface px-3 py-2 flex items-center gap-2 text-xs cursor-default"
+      @click.stop
     >
       <LinkIcon class="size-3.5 text-accent shrink-0" />
       <input
@@ -724,6 +738,7 @@ function closeAllPopovers() {
       :editor="editor"
       class="tiptap-content-container flex-1 px-3.5 py-2.5 text-sm text-ink outline-none cursor-text scrollbar-thin"
       :style="{ minHeight }"
+      @click="focusEditor"
     />
   </div>
 </template>
@@ -731,15 +746,22 @@ function closeAllPopovers() {
 <style>
 /* TipTap ProseMirror Styling */
 .tiptap-content-container {
+  display: flex;
+  flex-direction: column;
   position: relative;
   z-index: 1;
+  cursor: text;
 }
 
 .tiptap-content-container .tiptap {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
   outline: none;
   min-height: 100%;
   word-break: break-word;
   line-height: 1.6;
+  cursor: text;
 }
 
 .tiptap-content-container .tiptap p.is-editor-empty:first-child::before {
@@ -756,6 +778,7 @@ function closeAllPopovers() {
 .tiptap-content-container .tiptap p {
   margin-top: 0.3rem;
   margin-bottom: 0.3rem;
+  width: 100%;
 }
 
 .tiptap-content-container .tiptap h1 {
